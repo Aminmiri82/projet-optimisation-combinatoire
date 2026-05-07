@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>GraphBench Part 1 Results</title>
+  <title>GraphBench — Results</title>
   <style>
     :root {
       --bg: #f7f8fb;
@@ -181,6 +181,87 @@
       font-weight: 650;
     }
 
+    .main-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .tab {
+      cursor: pointer;
+      border: 1px solid var(--line);
+      background: #f1f5f9;
+      color: var(--ink);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .tab:hover { background: #e8eef7; }
+
+    .tab.active {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+    }
+
+    .panel-section { display: block; }
+
+    .panel-section[hidden] { display: none !important; }
+
+    .intro-part2 {
+      color: var(--muted);
+      margin: 0 0 16px;
+      max-width: 72ch;
+      line-height: 1.5;
+    }
+
+    .compare {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+
+    .compare th, .compare td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+    }
+
+    .compare th {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .subtabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 4px 0 18px;
+    }
+
+    .subtab {
+      cursor: pointer;
+      border: 1px dashed var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+      padding: 7px 12px;
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .subtab.active {
+      border-style: solid;
+      border-color: var(--violet);
+      color: #5b21b6;
+      background: #f5f3ff;
+    }
+
     @media (max-width: 900px) {
       .metrics, .grid { grid-template-columns: 1fr; }
       .topbar { align-items: start; flex-direction: column; }
@@ -192,14 +273,19 @@
   <header>
     <div class="wrap topbar">
       <div>
-        <h1>GraphBench Part 1 Results</h1>
-        <div class="subtle">Counterexample search summary from <code>part1_results.csv</code></div>
+        <h1>GraphBench — Results</h1>
+        <div class="subtle">Interactive summaries for Part 1 (hand heuristic) and Part 2 (FunSearch candidates).</div>
+        <div class="main-tabs" role="tablist">
+          <button type="button" class="tab active" data-target="panel-part1" role="tab" aria-selected="true">Part 1</button>
+          <button type="button" class="tab" data-target="panel-part2" role="tab" aria-selected="false">Part 2 — FunSearch</button>
+        </div>
       </div>
-      <div class="status" id="loadStatus">Loading CSV...</div>
+      <div class="status" id="loadStatus">Loading static data...</div>
     </div>
   </header>
 
   <main class="wrap">
+    <section id="panel-part1" class="panel-section">
     <section class="metrics">
       <div class="metric">
         <div class="label">Solved</div>
@@ -287,72 +373,241 @@
         </div>
       </div>
     </section>
+    </section>
+
+    <section id="panel-part2" class="panel-section" hidden>
+      <p class="intro-part2">
+        Part 2 replays the same 100 conjectures with LLM-generated scoring functions.
+        Use the tabs to compare <strong>candidate_006</strong> (GPT-5.5) and <strong>candidate_014</strong> (DeepSeek).
+        Data is embedded in <code>data.js</code>, so this page can be opened directly without a local server.
+      </p>
+
+      <table class="compare" aria-label="FunSearch candidates comparison">
+        <thead>
+          <tr>
+            <th>Candidate</th>
+            <th>Model</th>
+            <th>Solved</th>
+            <th>Total time</th>
+            <th>Average</th>
+            <th>Median</th>
+            <th>Max</th>
+          </tr>
+        </thead>
+        <tbody id="compareBody"></tbody>
+      </table>
+
+      <div class="subtabs" role="tablist">
+        <button type="button" class="subtab active" data-p2="006" role="tab" aria-selected="true">candidate_006 — GPT-5.5</button>
+        <button type="button" class="subtab" data-p2="014" role="tab" aria-selected="false">candidate_014 — DeepSeek</button>
+      </div>
+
+      <div class="status" id="p2_loadStatus" style="margin-bottom:12px;color:var(--muted);"></div>
+
+      <section class="metrics">
+        <div class="metric">
+          <div class="label">Solved</div>
+          <div class="value good" id="p2_solvedRate">-</div>
+        </div>
+        <div class="metric">
+          <div class="label">Average Time</div>
+          <div class="value" id="p2_avgTime">-</div>
+        </div>
+        <div class="metric">
+          <div class="label">Median Time</div>
+          <div class="value" id="p2_medianTime">-</div>
+        </div>
+        <div class="metric">
+          <div class="label">Max Time</div>
+          <div class="value warn" id="p2_maxTime">-</div>
+        </div>
+        <div class="metric">
+          <div class="label">Total Time</div>
+          <div class="value" id="p2_totalTime">-</div>
+        </div>
+      </section>
+
+      <section class="grid">
+        <div class="panel wide">
+          <div class="panel-head">
+            <h2>Time To Find By Conjecture</h2>
+            <span class="pill" id="p2_avgBadge">avg -</span>
+          </div>
+          <canvas id="p2_timeByConjecture"></canvas>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Average Time By Class</h2>
+            <span class="subtle">seconds</span>
+          </div>
+          <canvas id="p2_timeByClass"></canvas>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Runtime Distribution</h2>
+            <span class="subtle">number of conjectures</span>
+          </div>
+          <canvas id="p2_runtimeHistogram"></canvas>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Average Time By Sign</h2>
+            <span class="subtle">&lt;= vs &gt;=</span>
+          </div>
+          <canvas id="p2_timeBySign"></canvas>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Graph Order Distribution</h2>
+            <span class="subtle">returned counterexamples</span>
+          </div>
+          <canvas id="p2_orderHistogram"></canvas>
+        </div>
+
+        <div class="panel wide">
+          <div class="panel-head">
+            <h2>Slowest Counterexamples</h2>
+            <span class="subtle">top 15 by elapsed time</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Time</th>
+                  <th>Score</th>
+                  <th>Class</th>
+                  <th>Inequality</th>
+                  <th>Order</th>
+                  <th>Evaluated</th>
+                </tr>
+              </thead>
+              <tbody id="p2_slowTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </section>
   </main>
 
   <script src="data.js"></script>
   <script>
-    const CSV_FILE = "part1_results.csv";
+    let part2Store = { "006": null, "014": null };
+    let activePart2 = "006";
 
-    if (window.RESULT_ROWS) {
-      render(window.RESULT_ROWS);
-    } else {
-      fetch(CSV_FILE)
-        .then(response => {
-          if (!response.ok) throw new Error("Could not load " + CSV_FILE);
-          return response.text();
-        })
-        .then(text => render(parseCsv(text)))
-        .catch(error => {
+    function loadDashboard() {
+      try {
+        const part1Rows = requireRows("RESULT_ROWS");
+        const rows006 = requireRows("CANDIDATE_006_ROWS");
+        const rows014 = requireRows("CANDIDATE_014_ROWS");
+
+          part2Store["006"] = rows006;
+          part2Store["014"] = rows014;
+          render(part1Rows, "");
+          fillCompareTable();
+          render(part2Store[activePart2], "p2_");
+          setPart2Status();
           document.getElementById("loadStatus").textContent =
-            error.message + ". Serve this folder with a local web server.";
+            `${part1Rows.length} conjectures loaded (Part 1)`;
+      } catch (error) {
+        document.getElementById("loadStatus").textContent =
+          error.message + ". Make sure data.js is next to index.html.";
+      }
+    }
+
+    function requireRows(name) {
+      const rows = window[name];
+      if (!Array.isArray(rows)) {
+        throw new Error(`Missing dashboard data: window.${name}`);
+      }
+      return rows;
+    }
+
+    loadDashboard();
+
+    document.querySelectorAll(".main-tabs .tab").forEach(button => {
+      button.addEventListener("click", () => {
+        const target = button.getAttribute("data-target");
+        document.querySelectorAll(".main-tabs .tab").forEach(b => {
+          b.classList.toggle("active", b === button);
+          b.setAttribute("aria-selected", b === button ? "true" : "false");
         });
-    }
-
-    function parseCsv(text) {
-      const rows = [];
-      let row = [];
-      let cell = "";
-      let quoted = false;
-      for (let i = 0; i < text.length; i++) {
-        const ch = text[i];
-        const next = text[i + 1];
-        if (quoted) {
-          if (ch === '"' && next === '"') {
-            cell += '"';
-            i++;
-          } else if (ch === '"') {
-            quoted = false;
-          } else {
-            cell += ch;
-          }
-        } else if (ch === '"') {
-          quoted = true;
-        } else if (ch === ",") {
-          row.push(cell);
-          cell = "";
-        } else if (ch === "\n") {
-          row.push(cell);
-          rows.push(row);
-          row = [];
-          cell = "";
-        } else if (ch !== "\r") {
-          cell += ch;
+        document.querySelectorAll(".panel-section").forEach(panel => {
+          const show = panel.id === target;
+          panel.hidden = !show;
+        });
+        if (target === "panel-part2") {
+          requestAnimationFrame(() => {
+            render(part2Store[activePart2], "p2_");
+            setPart2Status();
+          });
         }
-      }
-      if (cell || row.length) {
-        row.push(cell);
-        rows.push(row);
-      }
-      const headers = rows.shift();
-      return rows.filter(r => r.length === headers.length).map(r => {
-        const obj = {};
-        headers.forEach((header, index) => obj[header] = r[index]);
-        return obj;
       });
+    });
+
+    document.querySelectorAll(".subtab").forEach(button => {
+      button.addEventListener("click", () => {
+        const key = button.getAttribute("data-p2");
+        if (!key || !part2Store[key]) return;
+        activePart2 = key;
+        document.querySelectorAll(".subtab").forEach(b => {
+          b.classList.toggle("active", b === button);
+          b.setAttribute("aria-selected", b === button ? "true" : "false");
+        });
+        render(part2Store[activePart2], "p2_");
+        setPart2Status();
+      });
+    });
+
+    function setPart2Status() {
+      const rows = part2Store[activePart2];
+      const label = activePart2 === "006" ? "GPT-5.5" : "DeepSeek";
+      document.getElementById("p2_loadStatus").textContent = rows
+        ? `Showing candidate_${activePart2} (${label}) — ${rows.length} conjectures`
+        : "";
     }
 
-    function render(rawRows) {
-      const rows = rawRows.map(row => ({
+    function fillCompareTable() {
+      const tbody = document.getElementById("compareBody");
+      const specs = [
+        { key: "006", name: "candidate_006", model: "GPT-5.5" },
+        { key: "014", name: "candidate_014", model: "DeepSeek" },
+      ];
+      tbody.innerHTML = specs
+        .map(spec => {
+          const stats = summarizeRows(part2Store[spec.key]);
+          return `
+            <tr>
+              <td><code>${spec.name}</code></td>
+              <td>${spec.model}</td>
+              <td>${stats.solved}/${stats.n}</td>
+              <td>${formatSeconds(stats.total)}</td>
+              <td>${formatSeconds(stats.avg)}</td>
+              <td>${formatSeconds(stats.median)}</td>
+              <td>${formatSeconds(stats.max)}</td>
+            </tr>
+          `;
+        })
+        .join("");
+    }
+
+    function summarizeRows(rawRows) {
+      const rows = prepareRows(rawRows || []);
+      const found = rows.filter(row => row.foundBool);
+      const times = found.map(row => row.time);
+      const avg = mean(times);
+      const median = percentile(times, 0.5);
+      const max = times.length ? Math.max(...times) : 0;
+      const total = sum(times);
+      return { n: rows.length, solved: found.length, total, avg, median, max };
+    }
+
+    function prepareRows(rawRows) {
+      return rawRows.map(row => ({
         ...row,
         id: Number(row.conjecture_id),
         foundBool: row.found === "True",
@@ -361,23 +616,27 @@
         evaluatedNum: Number(row.evaluated),
         orderNum: Number(row.order),
       }));
+    }
 
+    function render(rawRows, prefix = "") {
+      const rows = prepareRows(rawRows);
       const found = rows.filter(row => row.foundBool);
       const times = found.map(row => row.time);
       const avg = mean(times);
       const median = percentile(times, 0.5);
-      const max = Math.max(...times);
+      const max = times.length ? Math.max(...times) : 0;
       const total = sum(times);
 
-      text("loadStatus", `${rows.length} conjectures loaded`);
-      text("solvedRate", `${found.length}/${rows.length}`);
-      text("avgTime", formatSeconds(avg));
-      text("medianTime", formatSeconds(median));
-      text("maxTime", formatSeconds(max));
-      text("totalTime", formatSeconds(total));
-      text("avgBadge", `avg ${formatSeconds(avg)}`);
+      const pid = id => prefix + id;
 
-      barChart("timeByConjecture", rows.map(r => String(r.id)), rows.map(r => r.time), {
+      text(pid("solvedRate"), `${found.length}/${rows.length}`);
+      text(pid("avgTime"), formatSeconds(avg));
+      text(pid("medianTime"), formatSeconds(median));
+      text(pid("maxTime"), formatSeconds(max));
+      text(pid("totalTime"), formatSeconds(total));
+      text(pid("avgBadge"), `avg ${formatSeconds(avg)}`);
+
+      barChart(pid("timeByConjecture"), rows.map(r => String(r.id)), rows.map(r => r.time), {
         color: "#2563eb",
         average: avg,
         maxLabels: 34,
@@ -385,26 +644,26 @@
       });
 
       const classGroups = groupBy(rows, row => row.classes || "unknown");
-      barChart("timeByClass", Object.keys(classGroups), Object.values(classGroups).map(group => mean(group.map(r => r.time))), {
+      barChart(pid("timeByClass"), Object.keys(classGroups), Object.values(classGroups).map(group => mean(group.map(r => r.time))), {
         color: "#059669",
         valueSuffix: "s"
       });
 
-      histogram("runtimeHistogram", times, [0, 0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10], "#7c3aed");
+      histogram(pid("runtimeHistogram"), times, [0, 0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10], "#7c3aed");
 
       const signGroups = groupBy(rows, row => row.sign);
-      barChart("timeBySign", Object.keys(signGroups), Object.values(signGroups).map(group => mean(group.map(r => r.time))), {
+      barChart(pid("timeBySign"), Object.keys(signGroups), Object.values(signGroups).map(group => mean(group.map(r => r.time))), {
         color: "#b7791f",
         valueSuffix: "s"
       });
 
-      histogram("orderHistogram", rows.map(r => r.orderNum), [0, 2, 5, 10, 15, 20, 30, 50, 80, 120], "#dc2626");
+      histogram(pid("orderHistogram"), rows.map(r => r.orderNum), [0, 2, 5, 10, 15, 20, 30, 50, 80, 120], "#dc2626");
 
-      renderSlowTable(rows);
+      renderSlowTable(rows, prefix);
     }
 
-    function renderSlowTable(rows) {
-      const tbody = document.getElementById("slowTable");
+    function renderSlowTable(rows, prefix = "") {
+      const tbody = document.getElementById(prefix + "slowTable");
       tbody.innerHTML = rows
         .slice()
         .sort((a, b) => b.time - a.time)
