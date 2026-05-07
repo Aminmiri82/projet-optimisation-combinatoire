@@ -1,0 +1,570 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GraphBench Part 1 Results</title>
+  <style>
+    :root {
+      --bg: #f7f8fb;
+      --panel: #ffffff;
+      --ink: #17202a;
+      --muted: #5c6675;
+      --line: #dfe4ea;
+      --blue: #2563eb;
+      --green: #059669;
+      --amber: #b7791f;
+      --red: #dc2626;
+      --violet: #7c3aed;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 14px/1.45 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    .wrap {
+      width: min(1180px, calc(100vw - 32px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 28px 0 22px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .subtle {
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    .status {
+      color: var(--muted);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    main {
+      padding: 24px 0 36px;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .metric, .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+
+    .metric {
+      padding: 14px 16px;
+      min-width: 0;
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .value {
+      margin-top: 6px;
+      font-size: 28px;
+      font-weight: 760;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .value.good { color: var(--green); }
+    .value.warn { color: var(--amber); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .panel {
+      padding: 16px;
+      min-height: 330px;
+    }
+
+    .panel.wide {
+      grid-column: 1 / -1;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 16px;
+      letter-spacing: 0;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 250px;
+    }
+
+    .wide canvas {
+      height: 300px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .table-wrap {
+      max-height: 340px;
+      overflow: auto;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      height: 22px;
+      padding: 0 8px;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: #3730a3;
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    @media (max-width: 900px) {
+      .metrics, .grid { grid-template-columns: 1fr; }
+      .topbar { align-items: start; flex-direction: column; }
+      .status { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap topbar">
+      <div>
+        <h1>GraphBench Part 1 Results</h1>
+        <div class="subtle">Counterexample search summary from <code>part1_results.csv</code></div>
+      </div>
+      <div class="status" id="loadStatus">Loading CSV...</div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="metrics">
+      <div class="metric">
+        <div class="label">Solved</div>
+        <div class="value good" id="solvedRate">-</div>
+      </div>
+      <div class="metric">
+        <div class="label">Average Time</div>
+        <div class="value" id="avgTime">-</div>
+      </div>
+      <div class="metric">
+        <div class="label">Median Time</div>
+        <div class="value" id="medianTime">-</div>
+      </div>
+      <div class="metric">
+        <div class="label">Max Time</div>
+        <div class="value warn" id="maxTime">-</div>
+      </div>
+      <div class="metric">
+        <div class="label">Total Time</div>
+        <div class="value" id="totalTime">-</div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="panel wide">
+        <div class="panel-head">
+          <h2>Time To Find By Conjecture</h2>
+          <span class="pill" id="avgBadge">avg -</span>
+        </div>
+        <canvas id="timeByConjecture"></canvas>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Average Time By Class</h2>
+          <span class="subtle">seconds</span>
+        </div>
+        <canvas id="timeByClass"></canvas>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Runtime Distribution</h2>
+          <span class="subtle">number of conjectures</span>
+        </div>
+        <canvas id="runtimeHistogram"></canvas>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Average Time By Sign</h2>
+          <span class="subtle">&lt;= vs &gt;=</span>
+        </div>
+        <canvas id="timeBySign"></canvas>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Graph Order Distribution</h2>
+          <span class="subtle">returned counterexamples</span>
+        </div>
+        <canvas id="orderHistogram"></canvas>
+      </div>
+
+      <div class="panel wide">
+        <div class="panel-head">
+          <h2>Slowest Counterexamples</h2>
+          <span class="subtle">top 15 by elapsed time</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Time</th>
+                <th>Score</th>
+                <th>Class</th>
+                <th>Inequality</th>
+                <th>Order</th>
+                <th>Evaluated</th>
+              </tr>
+            </thead>
+            <tbody id="slowTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="data.js"></script>
+  <script>
+    const CSV_FILE = "part1_results.csv";
+
+    if (window.RESULT_ROWS) {
+      render(window.RESULT_ROWS);
+    } else {
+      fetch(CSV_FILE)
+        .then(response => {
+          if (!response.ok) throw new Error("Could not load " + CSV_FILE);
+          return response.text();
+        })
+        .then(text => render(parseCsv(text)))
+        .catch(error => {
+          document.getElementById("loadStatus").textContent =
+            error.message + ". Serve this folder with a local web server.";
+        });
+    }
+
+    function parseCsv(text) {
+      const rows = [];
+      let row = [];
+      let cell = "";
+      let quoted = false;
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        const next = text[i + 1];
+        if (quoted) {
+          if (ch === '"' && next === '"') {
+            cell += '"';
+            i++;
+          } else if (ch === '"') {
+            quoted = false;
+          } else {
+            cell += ch;
+          }
+        } else if (ch === '"') {
+          quoted = true;
+        } else if (ch === ",") {
+          row.push(cell);
+          cell = "";
+        } else if (ch === "\n") {
+          row.push(cell);
+          rows.push(row);
+          row = [];
+          cell = "";
+        } else if (ch !== "\r") {
+          cell += ch;
+        }
+      }
+      if (cell || row.length) {
+        row.push(cell);
+        rows.push(row);
+      }
+      const headers = rows.shift();
+      return rows.filter(r => r.length === headers.length).map(r => {
+        const obj = {};
+        headers.forEach((header, index) => obj[header] = r[index]);
+        return obj;
+      });
+    }
+
+    function render(rawRows) {
+      const rows = rawRows.map(row => ({
+        ...row,
+        id: Number(row.conjecture_id),
+        foundBool: row.found === "True",
+        time: Number(row.elapsed_seconds),
+        scoreNum: Number(row.score),
+        evaluatedNum: Number(row.evaluated),
+        orderNum: Number(row.order),
+      }));
+
+      const found = rows.filter(row => row.foundBool);
+      const times = found.map(row => row.time);
+      const avg = mean(times);
+      const median = percentile(times, 0.5);
+      const max = Math.max(...times);
+      const total = sum(times);
+
+      text("loadStatus", `${rows.length} conjectures loaded`);
+      text("solvedRate", `${found.length}/${rows.length}`);
+      text("avgTime", formatSeconds(avg));
+      text("medianTime", formatSeconds(median));
+      text("maxTime", formatSeconds(max));
+      text("totalTime", formatSeconds(total));
+      text("avgBadge", `avg ${formatSeconds(avg)}`);
+
+      barChart("timeByConjecture", rows.map(r => String(r.id)), rows.map(r => r.time), {
+        color: "#2563eb",
+        average: avg,
+        maxLabels: 34,
+        valueSuffix: "s"
+      });
+
+      const classGroups = groupBy(rows, row => row.classes || "unknown");
+      barChart("timeByClass", Object.keys(classGroups), Object.values(classGroups).map(group => mean(group.map(r => r.time))), {
+        color: "#059669",
+        valueSuffix: "s"
+      });
+
+      histogram("runtimeHistogram", times, [0, 0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10], "#7c3aed");
+
+      const signGroups = groupBy(rows, row => row.sign);
+      barChart("timeBySign", Object.keys(signGroups), Object.values(signGroups).map(group => mean(group.map(r => r.time))), {
+        color: "#b7791f",
+        valueSuffix: "s"
+      });
+
+      histogram("orderHistogram", rows.map(r => r.orderNum), [0, 2, 5, 10, 15, 20, 30, 50, 80, 120], "#dc2626");
+
+      renderSlowTable(rows);
+    }
+
+    function renderSlowTable(rows) {
+      const tbody = document.getElementById("slowTable");
+      tbody.innerHTML = rows
+        .slice()
+        .sort((a, b) => b.time - a.time)
+        .slice(0, 15)
+        .map(row => `
+          <tr>
+            <td>${row.id}</td>
+            <td>${formatSeconds(row.time)}</td>
+            <td>${formatNumber(row.scoreNum)}</td>
+            <td>${escapeHtml(row.classes)}</td>
+            <td>${escapeHtml(row.x)} ${escapeHtml(row.sign)} ${escapeHtml(row.y)}</td>
+            <td>${row.orderNum}</td>
+            <td>${row.evaluatedNum.toLocaleString()}</td>
+          </tr>
+        `)
+        .join("");
+    }
+
+    function barChart(canvasId, labels, values, options = {}) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = setupCanvas(canvas);
+      const width = canvas.width;
+      const height = canvas.height;
+      const pad = { top: 20, right: 18, bottom: 42, left: 48 };
+      const chartW = width - pad.left - pad.right;
+      const chartH = height - pad.top - pad.bottom;
+      const maxValue = Math.max(...values, options.average || 0, 0.001);
+      drawAxes(ctx, pad, chartW, chartH, maxValue);
+
+      const gap = Math.max(2, chartW / values.length * 0.22);
+      const barW = Math.max(2, chartW / values.length - gap);
+      values.forEach((value, index) => {
+        const x = pad.left + index * (chartW / values.length) + gap / 2;
+        const h = (value / maxValue) * chartH;
+        ctx.fillStyle = options.color || "#2563eb";
+        ctx.fillRect(x, pad.top + chartH - h, barW, h);
+      });
+
+      if (options.average !== undefined) {
+        const y = pad.top + chartH - (options.average / maxValue) * chartH;
+        ctx.strokeStyle = "#111827";
+        ctx.setLineDash([6, 5]);
+        ctx.beginPath();
+        ctx.moveTo(pad.left, y);
+        ctx.lineTo(pad.left + chartW, y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      drawLabels(ctx, labels, pad, chartW, chartH, options.maxLabels || labels.length);
+    }
+
+    function histogram(canvasId, values, bins, color) {
+      const labels = [];
+      const counts = new Array(bins.length - 1).fill(0);
+      for (const value of values) {
+        for (let i = 0; i < bins.length - 1; i++) {
+          const last = i === bins.length - 2;
+          if (value >= bins[i] && (value < bins[i + 1] || last)) {
+            counts[i]++;
+            break;
+          }
+        }
+      }
+      for (let i = 0; i < bins.length - 1; i++) {
+        labels.push(`${bins[i]}-${bins[i + 1]}`);
+      }
+      barChart(canvasId, labels, counts, { color });
+    }
+
+    function setupCanvas(canvas) {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      return canvas.getContext("2d");
+    }
+
+    function drawAxes(ctx, pad, chartW, chartH, maxValue) {
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      ctx.strokeStyle = "#dfe4ea";
+      ctx.fillStyle = "#5c6675";
+      ctx.font = "12px ui-sans-serif, system-ui";
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 4; i++) {
+        const y = pad.top + chartH - (i / 4) * chartH;
+        ctx.beginPath();
+        ctx.moveTo(pad.left, y);
+        ctx.lineTo(pad.left + chartW, y);
+        ctx.stroke();
+        ctx.fillText(formatNumber(maxValue * i / 4), 6, y + 4);
+      }
+    }
+
+    function drawLabels(ctx, labels, pad, chartW, chartH, maxLabels) {
+      const step = Math.max(1, Math.ceil(labels.length / maxLabels));
+      ctx.fillStyle = "#5c6675";
+      ctx.font = "11px ui-sans-serif, system-ui";
+      labels.forEach((label, index) => {
+        if (index % step !== 0) return;
+        const x = pad.left + index * (chartW / labels.length) + 2;
+        ctx.save();
+        ctx.translate(x, pad.top + chartH + 16);
+        ctx.rotate(-Math.PI / 5);
+        ctx.fillText(label, 0, 0);
+        ctx.restore();
+      });
+    }
+
+    function groupBy(rows, fn) {
+      return rows.reduce((acc, row) => {
+        const key = fn(row);
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(row);
+        return acc;
+      }, {});
+    }
+
+    function text(id, value) {
+      document.getElementById(id).textContent = value;
+    }
+
+    function sum(values) {
+      return values.reduce((acc, value) => acc + value, 0);
+    }
+
+    function mean(values) {
+      return values.length ? sum(values) / values.length : 0;
+    }
+
+    function percentile(values, p) {
+      if (!values.length) return 0;
+      const sorted = values.slice().sort((a, b) => a - b);
+      const index = (sorted.length - 1) * p;
+      const low = Math.floor(index);
+      const high = Math.ceil(index);
+      if (low === high) return sorted[low];
+      return sorted[low] + (sorted[high] - sorted[low]) * (index - low);
+    }
+
+    function formatSeconds(value) {
+      return `${formatNumber(value)}s`;
+    }
+
+    function formatNumber(value) {
+      if (!Number.isFinite(value)) return "-";
+      if (Math.abs(value) >= 100) return value.toFixed(0);
+      if (Math.abs(value) >= 10) return value.toFixed(1);
+      if (Math.abs(value) >= 1) return value.toFixed(2);
+      return value.toFixed(3);
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, ch => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      }[ch]));
+    }
+  </script>
+</body>
+</html>
