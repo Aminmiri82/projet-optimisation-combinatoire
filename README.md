@@ -11,6 +11,14 @@ violation(G) = f(x(G)) - y(G)   for y >= f(x)
 
 A graph is accepted only when the strict violation is positive and the required graph classes are satisfied.
 
+During search, candidates are ranked with a small hand-written guidance score in `scoring.py`.
+The guidance score is only used to choose promising parents when the raw violation is still
+negative or tied. The final decision still uses the strict violation formula above.
+
+The initial population includes simple extremal families: paths, cycles, cliques, random trees,
+and spider trees. Spider trees are useful for conjectures involving total domination versus
+matching, because they can increase total domination without increasing matching as quickly.
+
 ## Install
 
 ```bash

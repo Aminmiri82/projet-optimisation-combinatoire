@@ -1,0 +1,2 @@
+conjecture_id,found,elapsed_seconds,score,graph6,evaluated,classes,x,x_value,y,y_value,sign,rhs,order,size,density,minimum_degree,maximum_degree,average_degree
+737,True,0.069027,0.323166276983,U~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{?@????G,98,connected,density,0.8311688311688312,second_smallest_laplace_eigenvalue,0.40389456189245226,>=,0.727060838875048,22,192,0.8311688311688312,1,20,17.454545454545453

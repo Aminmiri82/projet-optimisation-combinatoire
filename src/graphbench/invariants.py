@@ -128,6 +128,11 @@ def _total_domination_number(G: nx.Graph) -> int:
 
 
 def _independent_domination_number(G: nx.Graph) -> int:
+    if G.number_of_nodes() == 0:
+        return 0
+    if nx.is_tree(G):
+        return _tree_independent_domination_number(G)
+
     nodes = tuple(G.nodes())
     index = {node: idx for idx, node in enumerate(nodes)}
     closed_masks = _closed_neighborhood_masks(G, nodes)
@@ -165,6 +170,42 @@ def _independent_domination_number(G: nx.Graph) -> int:
 
     dfs(0, 0, 0, 0)
     return best if best <= len(nodes) else math.inf
+
+
+def _tree_independent_domination_number(G: nx.Graph) -> int:
+    """Minimum independent dominating set on a tree via dynamic programming."""
+    root = next(iter(G.nodes()))
+    parent = {root: None}
+    order = [root]
+    for node in order:
+        for neighbor in G.neighbors(node):
+            if neighbor == parent[node]:
+                continue
+            parent[neighbor] = node
+            order.append(neighbor)
+
+    inf = G.number_of_nodes() + 1
+    selected: dict[int, int] = {}
+    dominated_by_child: dict[int, int] = {}
+    dominated_by_parent: dict[int, int] = {}
+
+    for node in reversed(order):
+        children = [neighbor for neighbor in G.neighbors(node) if parent.get(neighbor) == node]
+        selected[node] = 1 + sum(dominated_by_parent[child] for child in children)
+        dominated_by_parent[node] = sum(min(selected[child], dominated_by_child[child]) for child in children)
+
+        if not children:
+            dominated_by_child[node] = inf
+        else:
+            base = 0
+            extra = inf
+            for child in children:
+                best_without_requirement = min(selected[child], dominated_by_child[child])
+                base += best_without_requirement
+                extra = min(extra, selected[child] - best_without_requirement)
+            dominated_by_child[node] = base + extra
+
+    return min(selected[root], dominated_by_child[root])
 
 
 def _closed_neighborhood_masks(G: nx.Graph, nodes: tuple[int, ...]) -> tuple[int, ...]:

@@ -12,14 +12,14 @@ from .generators import generate_graph, generate_initial_population
 from .invariants import compute_cached
 from .mutations import mutate
 from .repair import repair
-from .scoring import violation_score
+from .scoring import heuristic_score, violation_score
 
 
 @dataclass
 class SearchConfig:
     time_limit: float = 60.0
     population_size: int = 120
-    min_order: int = 4
+    min_order: int = 2
     max_order: int = 48
     seed: int = 0
     fresh_probability: float = 0.12
@@ -52,22 +52,26 @@ def search_counterexample(conjecture: Conjecture, config: SearchConfig) -> Searc
     if not population:
         population = [nx.path_graph(max(2, config.min_order))]
 
-    scored: list[tuple[float, nx.Graph, dict[str, float]]] = []
+    scored: list[tuple[float, float, nx.Graph, dict[str, float]]] = []
     best_score = float("-inf")
     best_graph = population[0]
     best_invariants: dict[str, float] = {}
     evaluated = 0
 
     for graph in population:
-        score, invariants = _evaluate(graph, conjecture, needed)
+        if time.monotonic() - start >= config.time_limit:
+            break
+        objective, score, invariants = _evaluate(graph, conjecture, needed)
         evaluated += 1
-        scored.append((score, graph, invariants))
+        scored.append((objective, score, graph, invariants))
         if score > best_score:
             best_score, best_graph, best_invariants = score, graph, invariants
         if conjecture.is_counterexample(invariants):
             return _result(conjecture, True, start, score, graph, invariants, evaluated)
 
     while time.monotonic() - start < config.time_limit:
+        if not scored:
+            break
         parent = _select_parent(scored, rng)
         if rng.random() < config.fresh_probability:
             n = rng.randint(config.min_order, max_order)
@@ -79,7 +83,7 @@ def search_counterexample(conjecture: Conjecture, config: SearchConfig) -> Searc
             continue
 
         try:
-            score, invariants = _evaluate(candidate, conjecture, needed)
+            objective, score, invariants = _evaluate(candidate, conjecture, needed)
         except (KeyError, nx.NetworkXException, ValueError, OverflowError):
             continue
 
@@ -91,7 +95,7 @@ def search_counterexample(conjecture: Conjecture, config: SearchConfig) -> Searc
             if conjecture.is_counterexample(verified):
                 return _result(conjecture, True, start, score, candidate, verified, evaluated)
 
-        scored.append((score, candidate, invariants))
+        scored.append((objective, score, candidate, invariants))
         scored.sort(key=lambda item: item[0], reverse=True)
         if len(scored) > config.population_size:
             keep_elite = int(config.population_size * 0.75)
@@ -121,20 +125,20 @@ def _evaluate(
     graph: nx.Graph,
     conjecture: Conjecture,
     needed: set[str],
-) -> tuple[float, dict[str, float]]:
+) -> tuple[float, float, dict[str, float]]:
     invariants = compute_cached(graph, needed)
-    return violation_score(graph, invariants, conjecture), invariants
+    return heuristic_score(graph, invariants, conjecture), violation_score(graph, invariants, conjecture), invariants
 
 
 def _select_parent(
-    scored: list[tuple[float, nx.Graph, dict[str, float]]],
+    scored: list[tuple[float, float, nx.Graph, dict[str, float]]],
     rng: random.Random,
 ) -> nx.Graph:
     scored.sort(key=lambda item: item[0], reverse=True)
     if rng.random() < 0.75:
         top_count = max(1, len(scored) // 5)
-        return rng.choice(scored[:top_count])[1]
-    return rng.choice(scored)[1]
+        return rng.choice(scored[:top_count])[2]
+    return rng.choice(scored)[2]
 
 
 def _result(

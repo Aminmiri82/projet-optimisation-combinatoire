@@ -16,6 +16,13 @@ def generate_initial_population(
     max_order: int = 32,
 ) -> list[nx.Graph]:
     population: list[nx.Graph] = []
+    for graph in seed_graphs(classes, min_order, max_order):
+        graph = repair(graph, classes, rng)
+        if graph is not None and satisfies_classes(graph, classes):
+            population.append(_normalize_nodes(graph))
+        if len(population) >= size:
+            return population
+
     attempts = 0
     while len(population) < size and attempts < size * 80:
         attempts += 1
@@ -27,6 +34,42 @@ def generate_initial_population(
     return population
 
 
+def seed_graphs(classes: tuple[str, ...], min_order: int, max_order: int) -> list[nx.Graph]:
+    orders = sorted({2, 3, min_order, min(6, max_order), max_order})
+    orders = [order for order in orders if 2 <= order <= max_order]
+    graphs: list[nx.Graph] = []
+    for n in orders:
+        graphs.append(nx.path_graph(n))
+        if n >= 3 and "tree" not in classes:
+            graphs.append(nx.cycle_graph(n))
+        if "tree" not in classes:
+            graphs.append(nx.complete_graph(n))
+    graphs.extend(_spider_seed_graphs(max_order))
+    return graphs
+
+
+def _spider_seed_graphs(max_order: int) -> list[nx.Graph]:
+    patterns = ([3, 3, 3, 1], [3, 3, 3, 3, 1], [1, 3, 3, 3, 3], [3, 3, 3, 3, 3, 1])
+    graphs = []
+    for lengths in patterns:
+        if 1 + sum(lengths) <= max_order:
+            graphs.append(_spider(lengths))
+    return graphs
+
+
+def _spider(lengths: list[int] | tuple[int, ...]) -> nx.Graph:
+    graph = nx.Graph()
+    graph.add_node(0)
+    next_node = 1
+    for length in lengths:
+        previous = 0
+        for _ in range(length):
+            graph.add_edge(previous, next_node)
+            previous = next_node
+            next_node += 1
+    return graph
+
+
 def generate_graph(classes: tuple[str, ...], rng: random.Random, n: int) -> nx.Graph:
     if "tree" in classes:
         return generate_tree(rng, n)
@@ -36,7 +79,9 @@ def generate_graph(classes: tuple[str, ...], rng: random.Random, n: int) -> nx.G
 
 
 def generate_connected(rng: random.Random, n: int) -> nx.Graph:
-    kind = rng.choice(["tree_plus_edges", "path", "cycle", "complete", "gnp"])
+    kind = rng.choice(["random_tree", "tree_plus_edges", "path", "cycle", "complete", "gnp"])
+    if kind == "random_tree":
+        return generate_tree(rng, n)
     if kind == "path":
         return nx.path_graph(n)
     if kind == "cycle" and n >= 3:
