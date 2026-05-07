@@ -49,7 +49,9 @@ def seed_graphs(classes: tuple[str, ...], min_order: int, max_order: int) -> lis
     graphs.extend(_damaged_clique_chain_seed_graphs(max_order))
     graphs.extend(_sparse_connected_seed_graphs(max_order))
     graphs.extend(_triangle_path_seed_graphs(max_order))
+    graphs.extend(_triangle_tail_seed_graphs(max_order))
     graphs.extend(_clique_path_clique_seed_graphs(max_order))
+    graphs.extend(_branched_path_seed_graphs(max_order))
     return graphs
 
 
@@ -151,6 +153,25 @@ def _triangle_with_attached_paths(length: int) -> nx.Graph:
     return graph
 
 
+def _triangle_tail_seed_graphs(max_order: int) -> list[nx.Graph]:
+    graphs = []
+    for length in (5, 6, 7):
+        if 3 + length <= max_order:
+            graphs.append(_triangle_tail(length))
+    return graphs
+
+
+def _triangle_tail(length: int) -> nx.Graph:
+    graph = nx.cycle_graph(3)
+    previous = 0
+    next_node = 3
+    for _ in range(length):
+        graph.add_edge(previous, next_node)
+        previous = next_node
+        next_node += 1
+    return graph
+
+
 def _clique_path_clique_seed_graphs(max_order: int) -> list[nx.Graph]:
     graphs = []
     for clique_size, path_length in ((3, 3), (3, 4), (3, 5), (4, 4), (5, 5)):
@@ -174,6 +195,31 @@ def _clique_path_clique(left_size: int, right_size: int, path_length: int) -> nx
         graph.add_edge(previous, node)
         previous = node
     graph.add_edge(previous, right[0])
+    return graph
+
+
+def _branched_path_seed_graphs(max_order: int) -> list[nx.Graph]:
+    patterns = (
+        (17, ((1, 2), (5, 1), (11, 2))),
+        (18, ((1, 2), (6, 1), (12, 2))),
+        (20, ((2, 2), (7, 1), (13, 2))),
+    )
+    graphs = []
+    for path_length, branches in patterns:
+        if path_length + sum(length for _, length in branches) <= max_order:
+            graphs.append(_branched_path(path_length, branches))
+    return graphs
+
+
+def _branched_path(path_length: int, branches: tuple[tuple[int, int], ...]) -> nx.Graph:
+    graph = nx.path_graph(path_length)
+    next_node = path_length
+    for position, branch_length in branches:
+        previous = position
+        for _ in range(branch_length):
+            graph.add_edge(previous, next_node)
+            previous = next_node
+            next_node += 1
     return graph
 
 
