@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+import importlib.util
+from pathlib import Path
+
 import networkx as nx
 
 from .conjecture import Conjecture
@@ -103,3 +107,17 @@ def _structural_guidance(G: nx.Graph, invariants: dict[str, float], conjecture: 
 
 def _clamp(value: float, low: float = -1.0, high: float = 1.0) -> float:
     return max(low, min(high, value))
+
+
+def load_heuristic_score(path: str | Path) -> Callable[[nx.Graph, dict[str, float], Conjecture], float]:
+    """Load a generated heuristic_score function from a Python file."""
+    module_path = Path(path)
+    spec = importlib.util.spec_from_file_location(f"graphbench_candidate_{module_path.stem}", module_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Could not load scorer from {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    scorer = getattr(module, "heuristic_score", None)
+    if scorer is None or not callable(scorer):
+        raise AttributeError(f"{module_path} must define callable heuristic_score(G, invariants, conjecture)")
+    return scorer

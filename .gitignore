@@ -2,6 +2,8 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.DS_Store
+.env
 
 # Smoke test outputs (local / CI scratch)
 results/smoke*.csv

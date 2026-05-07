@@ -1,6 +1,6 @@
-# GraphBench Challenge - Part 1
+# GraphBench Challenge
 
-This repository contains a modular first heuristic for automatic conjecture refutation in graph theory.
+This repository contains a modular heuristic search engine and a FunSearch-style score evolution loop for automatic conjecture refutation in graph theory.
 
 The Part 1 score follows the assignment recommendation exactly:
 
@@ -52,6 +52,63 @@ PYTHONPATH=src python3 -m graphbench --time-limit 60
 ```
 
 Results are written to `results/part1_results.csv`.
+
+## Part 2: FunSearch-Style Score Evolution
+
+Generated scoring functions live in `src/graphbench/funsearch/candidates/`.
+Each candidate must define:
+
+```python
+def heuristic_score(G, invariants, conjecture):
+    return conjecture.violation(invariants)
+```
+
+Evaluate the baseline candidate on a small subset:
+
+```bash
+PYTHONPATH=src python3 -m graphbench.funsearch.evaluator \
+  src/graphbench/funsearch/candidates/baseline.py \
+  --limit 10 \
+  --time-limit 2 \
+  --output results/funsearch/baseline_10.csv
+```
+
+To generate a new candidate with OpenRouter, set:
+
+```bash
+export OPENROUTER_API_KEY="your-key"
+export OPENROUTER_MODEL="openai/gpt-5.5"
+export OPENROUTER_REASONING_EFFORT="low"
+```
+
+Then run:
+
+```bash
+PYTHONPATH=src python3 -m graphbench.funsearch.evolve
+```
+
+Candidate generation first requests OpenRouter structured output with a JSON schema. If provider routing cannot satisfy that parameter combination, it falls back to JSON object mode, then plain text with local validation.
+
+Evaluate the generated candidate:
+
+```bash
+PYTHONPATH=src python3 -m graphbench.funsearch.evaluator \
+  src/graphbench/funsearch/candidates/candidate_001.py \
+  --limit 30 \
+  --time-limit 3 \
+  --output results/funsearch/candidate_001_30.csv
+```
+
+The evaluator appends candidate summaries to `results/funsearch/registry.csv`.
+
+Run a small generate/evaluate loop:
+
+```bash
+PYTHONPATH=src python3 -m graphbench.funsearch.cycle \
+  --iterations 3 \
+  --limit 30 \
+  --time-limit 3
+```
 
 ## Architecture
 

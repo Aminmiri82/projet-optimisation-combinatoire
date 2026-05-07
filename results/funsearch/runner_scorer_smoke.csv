@@ -1,0 +1,4 @@
+conjecture_id,found,elapsed_seconds,score,graph6,evaluated,classes,x,x_value,y,y_value,sign,rhs,order,size,density,minimum_degree,maximum_degree,average_degree
+886,True,0.078453,4,I^|??KF@w,20,connected,maximum_degree,4,triangle_number,14,<=,10.0,10,19,0.4222222222222222,3,4,3.8
+980,True,0.107960,0.625,A_,1,connected,average_degree,1.0,clique_number,2,<=,1.375,2,1,1.0,1,1,1.0
+981,True,0.049989,0.333333333333,A_,1,connected,average_degree,1.0,clique_number,2,<=,1.6666666666666667,2,1,1.0,1,1,1.0

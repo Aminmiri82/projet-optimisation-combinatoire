@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from collections.abc import Callable
+import math
 import random
 import time
 
@@ -23,6 +25,7 @@ class SearchConfig:
     max_order: int = 48
     seed: int = 0
     fresh_probability: float = 0.12
+    scorer: Callable[[nx.Graph, dict[str, float], Conjecture], float] = heuristic_score
 
 
 @dataclass
@@ -61,7 +64,7 @@ def search_counterexample(conjecture: Conjecture, config: SearchConfig) -> Searc
     for graph in population:
         if time.monotonic() - start >= config.time_limit:
             break
-        objective, score, invariants = _evaluate(graph, conjecture, needed)
+        objective, score, invariants = _evaluate(graph, conjecture, needed, config.scorer)
         evaluated += 1
         scored.append((objective, score, graph, invariants))
         if score > best_score:
@@ -83,7 +86,7 @@ def search_counterexample(conjecture: Conjecture, config: SearchConfig) -> Searc
             continue
 
         try:
-            objective, score, invariants = _evaluate(candidate, conjecture, needed)
+            objective, score, invariants = _evaluate(candidate, conjecture, needed, config.scorer)
         except (KeyError, nx.NetworkXException, ValueError, OverflowError):
             continue
 
@@ -125,9 +128,17 @@ def _evaluate(
     graph: nx.Graph,
     conjecture: Conjecture,
     needed: set[str],
+    scorer: Callable[[nx.Graph, dict[str, float], Conjecture], float],
 ) -> tuple[float, float, dict[str, float]]:
     invariants = compute_cached(graph, needed)
-    return heuristic_score(graph, invariants, conjecture), violation_score(graph, invariants, conjecture), invariants
+    try:
+        raw_objective = scorer(graph, invariants, conjecture)
+        objective = float(raw_objective) if raw_objective is not None else float("-inf")
+    except Exception:
+        objective = float("-inf")
+    if not math.isfinite(objective):
+        objective = float("-inf")
+    return objective, violation_score(graph, invariants, conjecture), invariants
 
 
 def _select_parent(

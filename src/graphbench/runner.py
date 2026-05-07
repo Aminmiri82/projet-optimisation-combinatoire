@@ -6,6 +6,7 @@ from pathlib import Path
 
 from .loader import load_conjectures
 from .search import SearchConfig, search_counterexample
+from .scoring import load_heuristic_score
 
 
 def run_benchmark(
@@ -74,6 +75,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--limit", type=int)
     parser.add_argument("--only-id", type=int)
+    parser.add_argument("--scorer", type=Path, help="Python file defining heuristic_score(G, invariants, conjecture).")
     return parser
 
 
@@ -85,6 +87,7 @@ def main(argv: list[str] | None = None) -> None:
         min_order=args.min_order,
         max_order=args.max_order,
         seed=args.seed,
+        scorer=load_heuristic_score(args.scorer) if args.scorer else SearchConfig.scorer,
     )
     rows = run_benchmark(args.benchmark, args.output, config, args.limit, args.only_id)
     found = sum(1 for row in rows if row["found"])

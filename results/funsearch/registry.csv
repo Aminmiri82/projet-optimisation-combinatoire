@@ -1,0 +1,8 @@
+candidate,output,found,total,cost,avg_time_found
+src/graphbench/funsearch/candidates/candidate_001.py,results/funsearch/candidate_001.csv,29,30,15.088836,0.313408
+src/graphbench/funsearch/candidates/candidate_002.py,results/funsearch/candidate_002.csv,29,30,14.626626,0.297470
+src/graphbench/funsearch/candidates/candidate_003.py,results/funsearch/candidate_003.csv,28,30,17.026253,0.179509
+src/graphbench/funsearch/candidates/candidate_004.py,results/funsearch/candidate_004.csv,97,100,163.823954,1.379628
+src/graphbench/funsearch/candidates/candidate_005.py,results/funsearch/candidate_005.csv,98,100,136.057087,1.184256
+src/graphbench/funsearch/candidates/candidate_006.py,results/funsearch/candidate_006.csv,95,100,174.232382,1.307709
+src/graphbench/funsearch/candidates/candidate_006.py,results/funsearch/candidate_006_100.csv,100,100,157.502736,1.575027
