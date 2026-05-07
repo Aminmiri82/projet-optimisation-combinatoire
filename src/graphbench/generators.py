@@ -45,6 +45,11 @@ def seed_graphs(classes: tuple[str, ...], min_order: int, max_order: int) -> lis
         if "tree" not in classes:
             graphs.append(nx.complete_graph(n))
     graphs.extend(_spider_seed_graphs(max_order))
+    graphs.extend(_double_star_seed_graphs(max_order))
+    graphs.extend(_damaged_clique_chain_seed_graphs(max_order))
+    graphs.extend(_sparse_connected_seed_graphs(max_order))
+    graphs.extend(_triangle_path_seed_graphs(max_order))
+    graphs.extend(_clique_path_clique_seed_graphs(max_order))
     return graphs
 
 
@@ -67,6 +72,108 @@ def _spider(lengths: list[int] | tuple[int, ...]) -> nx.Graph:
             graph.add_edge(previous, next_node)
             previous = next_node
             next_node += 1
+    return graph
+
+
+def _double_star_seed_graphs(max_order: int) -> list[nx.Graph]:
+    graphs = []
+    for leaves in (4, 6, 8, 10):
+        if 2 + 2 * leaves <= max_order:
+            graphs.append(_double_star(leaves, leaves))
+    return graphs
+
+
+def _double_star(left_leaves: int, right_leaves: int) -> nx.Graph:
+    graph = nx.Graph()
+    graph.add_edge(0, 1)
+    next_node = 2
+    for _ in range(left_leaves):
+        graph.add_edge(0, next_node)
+        next_node += 1
+    for _ in range(right_leaves):
+        graph.add_edge(1, next_node)
+        next_node += 1
+    return graph
+
+
+def _damaged_clique_chain_seed_graphs(max_order: int) -> list[nx.Graph]:
+    graphs = []
+    for clique_size, copies in ((5, 2), (6, 2), (7, 2), (7, 3)):
+        if clique_size * copies <= max_order:
+            graphs.append(_damaged_clique_chain(clique_size, copies))
+    return graphs
+
+
+def _damaged_clique_chain(clique_size: int, copies: int) -> nx.Graph:
+    graph = nx.Graph()
+    offset = 0
+    previous_bridge = None
+    for _ in range(copies):
+        nodes = list(range(offset, offset + clique_size))
+        graph.add_nodes_from(nodes)
+        graph.add_edges_from((u, v) for index, u in enumerate(nodes) for v in nodes[index + 1 :])
+        graph.remove_edge(nodes[0], nodes[1])
+        if previous_bridge is not None:
+            graph.add_edge(previous_bridge, nodes[0])
+        previous_bridge = nodes[1]
+        offset += clique_size
+    return graph
+
+
+def _sparse_connected_seed_graphs(max_order: int) -> list[nx.Graph]:
+    graphs = []
+    for n, probability, seed in ((10, 0.22, 17), (12, 0.18, 681), (16, 0.16, 113), (18, 0.14, 271)):
+        if n <= max_order:
+            rng = random.Random(seed)
+            graph = nx.gnp_random_graph(n, probability, seed=seed)
+            graphs.append(connect_components(graph, rng))
+    return graphs
+
+
+def _triangle_path_seed_graphs(max_order: int) -> list[nx.Graph]:
+    graphs = []
+    for length in (2, 3, 4):
+        n = 3 + 3 * length
+        if n <= max_order:
+            graphs.append(_triangle_with_attached_paths(length))
+    return graphs
+
+
+def _triangle_with_attached_paths(length: int) -> nx.Graph:
+    graph = nx.cycle_graph(3)
+    next_node = 3
+    for root in range(3):
+        previous = root
+        for _ in range(length):
+            graph.add_edge(previous, next_node)
+            previous = next_node
+            next_node += 1
+    return graph
+
+
+def _clique_path_clique_seed_graphs(max_order: int) -> list[nx.Graph]:
+    graphs = []
+    for clique_size, path_length in ((3, 3), (3, 4), (3, 5), (4, 4), (5, 5)):
+        n = 2 * clique_size + path_length
+        if n <= max_order:
+            graphs.append(_clique_path_clique(clique_size, clique_size, path_length))
+    return graphs
+
+
+def _clique_path_clique(left_size: int, right_size: int, path_length: int) -> nx.Graph:
+    graph = nx.Graph()
+    left = list(range(left_size))
+    path = list(range(left_size, left_size + path_length))
+    right = list(range(left_size + path_length, left_size + path_length + right_size))
+    graph.add_nodes_from(left + path + right)
+    graph.add_edges_from((u, v) for index, u in enumerate(left) for v in left[index + 1 :])
+    graph.add_edges_from((u, v) for index, u in enumerate(right) for v in right[index + 1 :])
+
+    previous = left[0]
+    for node in path:
+        graph.add_edge(previous, node)
+        previous = node
+    graph.add_edge(previous, right[0])
     return graph
 
 

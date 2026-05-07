@@ -280,11 +280,13 @@ def _average_distances(G: nx.Graph) -> list[float]:
 
 
 def _proximity(G: nx.Graph) -> float:
-    return min(_average_distances(G))
+    distances = _average_distances(G)
+    return 1.0 / max(distances) if distances and max(distances) > 0 else 0.0
 
 
 def _remoteness(G: nx.Graph) -> float:
-    return max(_average_distances(G))
+    distances = _average_distances(G)
+    return 1.0 / min(distances) if distances and min(distances) > 0 else 0.0
 
 
 def _randic_index(G: nx.Graph) -> float:

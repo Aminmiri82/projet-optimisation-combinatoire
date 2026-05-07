@@ -1,0 +1,2 @@
+conjecture_id,found,elapsed_seconds,score,graph6,evaluated,classes,x,x_value,y,y_value,sign,rhs,order,size,density,minimum_degree,maximum_degree,average_degree
+7694,True,5.625579,0.00107084122534,Hh?GuB@,278,"claw_free,connected",largest_distance_eigenvalue,23.219364222998806,proximity,0.24242424242424243,>=,0.2434950836495781,9,11,0.3055555555555556,1,4,2.4444444444444446

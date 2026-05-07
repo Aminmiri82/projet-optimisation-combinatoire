@@ -19,6 +19,10 @@ The initial population includes simple extremal families: paths, cycles, cliques
 and spider trees. Spider trees are useful for conjectures involving total domination versus
 matching, because they can increase total domination without increasing matching as quickly.
 
+The benchmark uses reciprocal distance conventions for `proximity` and `remoteness`:
+`proximity = 1 / max_average_distance` and `remoteness = 1 / min_average_distance`.
+This matches the stored benchmark counterexample values.
+
 ## Install
 
 ```bash
