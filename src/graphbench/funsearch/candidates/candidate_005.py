@@ -1,269 +1,67 @@
+import math
+
 def heuristic_score(G, invariants, conjecture):
-    import math
-
-    n_nodes = G.number_of_nodes()
-    m_edges = G.number_of_edges()
-
-    def finite_float(v, default=0.0):
-        try:
-            v = float(v)
-            if math.isfinite(v):
-                return v
-        except Exception:
-            pass
-        try:
-            return float(default)
-        except Exception:
-            return 0.0
-
-    n = finite_float(invariants.get("order", n_nodes), n_nodes)
-    if n < 1.0:
-        n = 1.0
-
-    def fget(name, default=0.0):
-        if not name:
-            return finite_float(default, 0.0)
-        return finite_float(invariants.get(name, default), default)
-
-    def squash(z):
-        if z > 30.0:
-            return 1.0
-        if z < -30.0:
-            return -1.0
-        return math.tanh(z)
-
-    def sigmoid(z):
-        if z > 40.0:
-            return 1.0
-        if z < -40.0:
-            return 0.0
-        return 1.0 / (1.0 + math.exp(-z))
-
-    linear_like = set((
-        "order", "diameter", "radius", "maximum_degree", "minimum_degree", "average_degree",
-        "clique_number", "domination_number", "total_domination_number", "independence_number",
-        "vertex_cover_number", "independent_domination_number", "matching_number", "chromatic_number",
-        "edge_connectivity", "vertex_connectivity", "zero_forcing_number", "power_domination_number",
-        "metric_dimension", "path_cover_number", "annihilation_number", "k_residual_index",
-        "slater_number", "sub_total_domination_number", "restrained_domination_number",
-        "connected_domination_number", "upper_domination_number", "forcing_number", "feedback_vertex_set_number"
-    ))
-    quadratic_like = set((
-        "size", "triangle_number", "first_zagreb_index", "second_zagreb_index", "wiener_index",
-        "hyper_wiener_index", "largest_distance_eigenvalue", "energy", "laplacian_energy",
-        "distance_energy", "eccentric_connectivity_index", "gutman_index", "degree_sum",
-        "forgotten_index", "harmonic_index", "randic_index"
-    ))
-
-    def norm(name):
-        v = fget(name, 0.0)
-        if name in linear_like:
-            return v / max(1.0, n)
-        if name in quadratic_like:
-            return v / max(1.0, n * n)
-        if name == "density":
-            return max(0.0, min(1.0, v))
-        if abs(v) > 1000000.0:
-            return squash(v / max(1.0, abs(v)))
-        return v
-
-    try:
-        violation = finite_float(conjecture.violation(invariants), 0.0)
-    except Exception:
-        violation = 0.0
-
-    x_name = str(getattr(conjecture, "x", "") or "")
-    y_name = str(getattr(conjecture, "y", "") or "")
-    sign = str(getattr(conjecture, "sign", "<=") or "<=")
-    coeffs = getattr(conjecture, "coefficients", ()) or ()
-    intercept = finite_float(getattr(conjecture, "intercept", 0.0), 0.0)
-    x_value = fget(x_name, 0.0)
-    y_value = fget(y_name, 0.0)
-
-    poly = intercept
-    derivative = 0.0
-    xp = x_value
-    for power, coefficient in enumerate(coeffs, start=1):
-        c = finite_float(coefficient, 0.0)
-        try:
-            term = c * xp
-            if math.isfinite(term):
-                poly += term
-        except Exception:
-            pass
-        try:
-            if power == 1:
-                derivative += c
-            else:
-                dterm = power * c * (x_value ** (power - 1))
-                if math.isfinite(dterm):
-                    derivative += dterm
-        except Exception:
-            pass
-        try:
-            xp *= x_value
-            if not math.isfinite(xp):
-                xp = 0.0
-        except Exception:
-            xp = 0.0
-
-    if not math.isfinite(poly):
-        poly = 0.0
-    if not math.isfinite(derivative):
-        derivative = 0.0
-
-    if sign == "<=":
-        raw_margin = y_value - poly
-        wanted_high = y_name
-        wanted_low = x_name
-        x_direction = -1.0 if derivative > 0.0 else (1.0 if derivative < 0.0 else 0.0)
+    violation = conjecture.violation(invariants)
+    n = max(1.0, float(invariants.get('order', G.number_of_nodes())))
+    x_val = float(invariants.get(conjecture.x, 0.0))
+    y_val = float(invariants.get(conjecture.y, 0.0))
+    coeffs = conjecture.coefficients
+    intercept = float(conjecture.intercept)
+    sign = conjecture.sign
+    
+    # Compute polynomial P(x_val)
+    poly = 0.0
+    power = 1.0
+    for c in coeffs:
+        poly += float(c) * power
+        power *= x_val
+    # Derivative P'(x_val)
+    deriv = 0.0
+    power = 1.0
+    for k, c in enumerate(coeffs, 1):
+        deriv += k * float(c) * power
+        power *= x_val
+    
+    # Base score: large weight on violation
+    score = 50.0 * violation
+    
+    # Smooth term near decision boundary: reward large |poly - intercept| when violation is small
+    diff = poly - intercept
+    weight_boundary = math.exp(-5.0 * violation * violation)  # ~1 near 0, ~0 far
+    diff_norm = abs(diff) / (abs(diff) + n)
+    score += 3.0 * weight_boundary * diff_norm
+    
+    # Directional bonus: if violation is negative, encourage sign flip
+    # For sign '<=' we want y <= poly, so negative violation means y > poly (bad).
+    # We want poly to increase relative to y. Reward positive derivative when violation negative.
+    # For sign '>=' we want y >= poly, so negative violation means y < poly (bad).
+    # Reward negative derivative when violation negative.
+    if sign == '<=':
+        deriv_bonus = deriv / (abs(deriv) + 1.0)
     else:
-        raw_margin = poly - y_value
-        wanted_high = x_name
-        wanted_low = y_name
-        x_direction = 1.0 if derivative > 0.0 else (-1.0 if derivative < 0.0 else 0.0)
-    if not math.isfinite(raw_margin):
-        raw_margin = 0.0
-
-    abs_total = abs(y_value) + abs(poly) + abs(x_value)
-    scale = 1.0 + abs(y_value) + abs(poly)
-    root_scale = max(1.0, math.sqrt(scale))
-    log_scale = 1.0 + math.log1p(abs_total)
-    n_scale = max(1.0, math.sqrt(n))
-    poly_scale = max(1.0, abs(derivative) * max(1.0, abs(x_value)) / max(1.0, len(coeffs)))
-
-    smooth_margin = squash(raw_margin / scale)
-    local_margin = squash(raw_margin / root_scale)
-    micro_margin = squash(raw_margin / log_scale)
-    size_margin = squash(raw_margin / n_scale)
-    deriv_margin = squash(raw_margin / (1.0 + math.sqrt(poly_scale)))
-    near_positive = sigmoid(raw_margin / root_scale)
-    almost_positive = sigmoid(raw_margin / log_scale)
-
-    if n > 1.0:
-        density_default = (2.0 * float(m_edges)) / max(1.0, n * (n - 1.0))
-    else:
-        density_default = 0.0
-    density = max(0.0, min(1.0, fget("density", density_default)))
-
-    leaves_count = 0
-    isolated_count = 0
-    max_degree_seen = 0
-    min_degree_seen = None
-    degree_sum = 0.0
-    degree_sum_sq = 0.0
-    odd_count = 0
-    for _, d in G.degree():
-        if d == 0:
-            isolated_count += 1
-        elif d == 1:
-            leaves_count += 1
-        if d & 1:
-            odd_count += 1
-        if d > max_degree_seen:
-            max_degree_seen = d
-        if min_degree_seen is None or d < min_degree_seen:
-            min_degree_seen = d
-        fd = float(d)
-        degree_sum += fd
-        degree_sum_sq += fd * fd
-
-    avg_degree_seen = degree_sum / max(1.0, n)
-    leaves = float(leaves_count) / max(1.0, n)
-    isolated = float(isolated_count) / max(1.0, n)
-    odd_frac = float(odd_count) / max(1.0, n)
-    max_deg_norm = fget("maximum_degree", max_degree_seen) / max(1.0, n - 1.0)
-    min_deg_norm = fget("minimum_degree", min_degree_seen if min_degree_seen is not None else 0.0) / max(1.0, n - 1.0)
-    avg_deg_norm = fget("average_degree", avg_degree_seen) / max(1.0, n - 1.0)
-    degree_var = max(0.0, degree_sum_sq / max(1.0, n) - avg_degree_seen * avg_degree_seen)
-    degree_var_hint = degree_var / max(1.0, n * n)
-    irregularity_hint = squash(degree_var / max(1.0, avg_degree_seen + 1.0))
-    hub_hint = squash((max_degree_seen - avg_degree_seen) / max(1.0, n))
-    leaf_or_iso = min(1.0, leaves + isolated)
-
-    triangles = fget("triangle_number", 0.0) / max(1.0, n * n)
-    diameter = fget("diameter", 0.0) / max(1.0, n)
-    radius = fget("radius", 0.0) / max(1.0, n)
-    clique = fget("clique_number", 0.0) / max(1.0, n)
-    independence = fget("independence_number", 0.0) / max(1.0, n)
-    matching = fget("matching_number", 0.0) / max(1.0, n)
-    chromatic = fget("chromatic_number", 0.0) / max(1.0, n)
-    connectivity = max(fget("edge_connectivity", 0.0), fget("vertex_connectivity", 0.0)) / max(1.0, n)
-
-    dense = set(("clique_number", "triangle_number", "size", "density", "maximum_degree", "average_degree",
-                 "first_zagreb_index", "second_zagreb_index", "chromatic_number", "matching_number",
-                 "edge_connectivity", "vertex_connectivity", "energy", "laplacian_energy", "forgotten_index"))
-    sparse = set(("diameter", "radius", "domination_number", "total_domination_number", "independence_number",
-                  "independent_domination_number", "vertex_cover_number", "zero_forcing_number",
-                  "power_domination_number", "metric_dimension", "path_cover_number", "annihilation_number",
-                  "restrained_domination_number", "connected_domination_number"))
-    distance_like = set(("diameter", "radius", "wiener_index", "hyper_wiener_index", "largest_distance_eigenvalue",
-                         "distance_energy", "eccentric_connectivity_index", "gutman_index"))
-    tree_like = set(("diameter", "radius", "domination_number", "total_domination_number", "independence_number",
-                     "independent_domination_number", "wiener_index", "path_cover_number", "annihilation_number"))
-
-    deriv_mag = squash(abs(derivative) / (1.0 + abs(poly) + abs(y_value)))
-    high_norm = norm(wanted_high)
-    low_norm = norm(wanted_low)
-    x_norm = norm(x_name)
-    y_norm = norm(y_name)
-
-    score = 100.0 * violation
-
-    score += 2.55 * smooth_margin
-    score += 0.70 * local_margin
-    score += 0.09 * micro_margin
-    score += 0.035 * size_margin
-    score += 0.045 * deriv_margin
-    score += 0.15 * near_positive
-    score += 0.035 * almost_positive
-
-    score += 0.265 * high_norm - 0.112 * low_norm
-    score += 0.13 * x_direction * deriv_mag * x_norm
-    if sign == "<=":
-        score += 0.038 * y_norm
-    else:
-        score -= 0.038 * y_norm
-
-    if wanted_high in dense:
-        score += 0.188 * density + 0.103 * triangles + 0.084 * max_deg_norm + 0.045 * avg_deg_norm + 0.024 * clique + 0.018 * chromatic
-    if wanted_high in sparse:
-        score += 0.150 * (1.0 - density) + 0.094 * leaves + 0.090 * max(diameter, radius) + 0.026 * isolated + 0.025 * independence + 0.019 * hub_hint
-    if wanted_high in distance_like:
-        score += 0.054 * (1.0 - density) + 0.034 * leaf_or_iso + 0.026 * irregularity_hint + 0.018 * max(diameter, radius)
-    if wanted_low in dense:
-        score += 0.098 * (1.0 - density) + 0.047 * leaves + 0.032 * max(diameter, radius) + 0.018 * independence
-    if wanted_low in sparse:
-        score += 0.088 * density + 0.056 * max_deg_norm + 0.031 * triangles + 0.016 * matching + 0.012 * connectivity
-    if wanted_low in distance_like:
-        score += 0.043 * density + 0.027 * max_deg_norm + 0.012 * avg_deg_norm
-    if wanted_high in tree_like and wanted_low in dense:
-        score += 0.047 * (1.0 - density) + 0.036 * leaves + 0.012 * hub_hint
-    if wanted_high in dense and wanted_low in tree_like:
-        score += 0.047 * density + 0.036 * max_deg_norm + 0.012 * triangles
-
-    subgroup = str(getattr(conjecture, "subgroup", "") or "").lower()
-    if "tree" in subgroup:
-        score += 0.134 * (1.0 - density) + 0.113 * leaves + 0.100 * diameter - 0.048 * triangles - 0.018 * isolated
-    if "connected" in subgroup:
-        score += 0.028 * min_deg_norm - 0.049 * isolated
-    if "regular" in subgroup:
-        score -= 0.068 * degree_var_hint + 0.026 * (1.0 - irregularity_hint)
-    if "claw_free" in subgroup:
-        score += 0.063 * density + 0.041 * triangles - 0.026 * leaves
-    if "bipartite" in subgroup:
-        score += 0.062 * (1.0 - min(1.0, 12.0 * triangles)) + 0.021 * (1.0 - density) - 0.012 * clique
-    if "planar" in subgroup:
-        score += 0.036 * (1.0 - density) + 0.021 * min(1.0, avg_degree_seen / 6.0) - 0.010 * max(0.0, avg_degree_seen - 6.0) / max(1.0, n)
-    if "eulerian" in subgroup:
-        score += 0.024 * min_deg_norm - 0.024 * leaves - 0.020 * odd_frac
-    if "cubic" in subgroup:
-        score -= 0.018 * abs(avg_degree_seen - 3.0) / max(1.0, n)
-
-    score += 0.006 * squash((n - 6.0) / 10.0)
-    score += 0.0047 * irregularity_hint
-    score += 0.0026 * hub_hint
-
-    if not math.isfinite(score):
-        score = 0.0
+        deriv_bonus = -deriv / (abs(deriv) + 1.0)
+    # Only apply when violation is negative (i.e., we are on wrong side)
+    if violation < 0:
+        score += 0.5 * deriv_bonus
+    
+    # Encourage moderate density when violation is small (more flexible)
+    density = float(invariants.get('density', 0.0))
+    if abs(violation) < 0.3:
+        score += 0.02 * density * (1.0 - density)
+    
+    # Subgroup-specific hints (cheap, based on invariants)
+    subgroup = conjecture.subgroup
+    if 'tree' in subgroup:
+        leaves = float(invariants.get('number_of_leaves', 0.0))
+        score += 0.03 * leaves / n
+        score += 0.01 * (1.0 - density)
+    if 'claw_free' in subgroup:
+        max_deg = float(invariants.get('maximum_degree', 0.0))
+        # Claw-free graphs have bounded neighborhoods; reward low max degree
+        score += 0.02 * (1.0 - max_deg / n)
+    
+    # Tie-breaking with normalized y value
+    score += 0.01 * y_val / n
+    
+    # Ensure finite and return
     return float(score)

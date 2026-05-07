@@ -28,9 +28,6 @@ def call_openrouter(
         "max_tokens": max_tokens,
         "temperature": temperature,
     }
-    effort = reasoning_effort or os.environ.get("OPENROUTER_REASONING_EFFORT", "low")
-    if effort:
-        payload["reasoning"] = {"effort": effort}
     if response_format is not None:
         payload["response_format"] = response_format
     if require_parameters:

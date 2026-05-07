@@ -9,48 +9,52 @@ def heuristic_score(G, invariants, conjecture):
     intercept = float(conjecture.intercept)
     sign = conjecture.sign
 
-    # Compute polynomial P(x_val) and derivative P'(x_val)
+    # Polynomial P(x_val)
     poly = 0.0
     power = 1.0
     for c in coeffs:
         poly += float(c) * power
         power *= x_val
+
+    # Derivative P'(x_val)
     deriv = 0.0
     power = 1.0
     for k, c in enumerate(coeffs, 1):
         deriv += k * float(c) * power
         power *= x_val
 
-    # ---------- core violation weight ----------
+    # ---------- Base violation (dominant) ----------
     score = 50.0 * violation
 
-    # ---------- smooth guidance near decision boundary ----------
-    diff = poly - intercept              # signed residual
+    # ---------- Smooth boundary term ----------
+    diff = poly - intercept
     diff_abs = abs(diff)
-    # weight concentrated near violation = 0
-    boundary_weight = math.exp(-5.0 * violation * violation)
-    # bounded ratio: how large is diff relative to typical scale (n)
+    # Gaussian weight: ~1 near violation=0, decays quickly
+    boundary_weight = math.exp(-6.0 * violation * violation)
     diff_ratio = diff_abs / (diff_abs + n + 1.0)
-    score += 3.0 * boundary_weight * diff_ratio
+    score += 3.5 * boundary_weight * diff_ratio
 
-    # ---------- derivative direction bonus (only when violation is negative) ----------
-    # For '<=': we want y <= poly. Negative violation means y > poly -> bad.
-    #   We want poly to increase relative to y, so reward positive derivative.
-    # For '>=': we want y >= poly. Negative violation means y < poly -> bad.
-    #   We want poly to decrease relative to y, so reward negative derivative.
+    # ---------- Gradient guidance when violation negative ----------
+    # For sign '<=' we want y <= poly => want poly larger than y.
+    # For sign '>=' we want y >= poly => want poly smaller than y.
+    # We define direction such that positive means moving toward satisfying inequality.
     if sign == '<=':
-        deriv_bonus = deriv / (abs(deriv) + 1.0)
+        direction = deriv          # increasing poly helps
     else:
-        deriv_bonus = -deriv / (abs(deriv) + 1.0)
+        direction = -deriv         # decreasing poly helps
+    # Normalize direction to [-1,1]
+    dir_norm = direction / (abs(deriv) + 1.0)
+    # Penalty for moving away from boundary (i.e., direction opposite to what we want)
+    away_penalty = max(0.0, -dir_norm) * 0.3
     if violation < 0:
-        score += 0.5 * deriv_bonus
+        score += 0.5 * dir_norm - away_penalty
 
-    # ---------- moderate density encouragement (small violation) ----------
+    # ---------- Density diversity bonus (small) ----------
     density = float(invariants.get('density', 0.0))
     if abs(violation) < 0.3:
         score += 0.02 * density * (1.0 - density)
 
-    # ---------- subgroup specific hints (cheap, based on invariants) ----------
+    # ---------- Subgroup clues (cheap heuristics) ----------
     subgroup = conjecture.subgroup
     if 'tree' in subgroup:
         leaves = float(invariants.get('number_of_leaves', 0.0))
@@ -58,9 +62,10 @@ def heuristic_score(G, invariants, conjecture):
         score += 0.01 * (1.0 - density)
     if 'claw_free' in subgroup:
         max_deg = float(invariants.get('maximum_degree', 0.0))
+        # Claw‑free graphs have bounded neighborhoods; lower max degree often helps
         score += 0.02 * (1.0 - max_deg / n)
 
-    # ---------- tiny tie breaker ----------
+    # ---------- Tie‑breaker ----------
     score += 0.01 * y_val / n
 
     return float(score)

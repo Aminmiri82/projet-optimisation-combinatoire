@@ -8,30 +8,50 @@ def heuristic_score(G, invariants, conjecture):
     coeffs = conjecture.coefficients
     intercept = float(conjecture.intercept)
     sign = conjecture.sign
+
+    # Evaluate polynomial P(x_val)
     poly = 0.0
     power = 1.0
     for c in coeffs:
         poly += float(c) * power
         power *= x_val
+
+    # Derivative P'(x_val)
     deriv = 0.0
     power = 1.0
     for k, c in enumerate(coeffs, 1):
         deriv += k * float(c) * power
         power *= x_val
+
+    # ---------- Base violation (dominant) ----------
     score = 50.0 * violation
+
+    # ---------- Smooth boundary term ----------
     diff = poly - intercept
-    weight = math.exp(-8.0 * violation * violation)
-    diff_norm = abs(diff) / (abs(diff) + n + 1.0)
-    score += 3.5 * weight * diff_norm
+    diff_abs = abs(diff)
+    v_sq = violation * violation
+    # Logistic weight: near 1 for small |violation|, decays smoothly
+    boundary_weight = 1.0 / (1.0 + 50.0 * v_sq)
+    diff_ratio = diff_abs / (diff_abs + n + 1.0)
+    score += 5.0 * boundary_weight * diff_ratio
+
+    # ---------- Gradient guidance when violation negative ----------
     if sign == '<=':
-        deriv_bonus = deriv / (abs(deriv) + 1.0)
+        direction = deriv
     else:
-        deriv_bonus = -deriv / (abs(deriv) + 1.0)
+        direction = -deriv
+    dir_norm = direction / (abs(deriv) + 1.0)
     if violation < 0:
-        score += 0.5 * deriv_bonus
+        # Continuous push: increases with distance from boundary but saturates
+        dist_factor = 1.0 - math.exp(-diff_abs / (n + 1.0))
+        score += 0.8 * dir_norm * dist_factor
+
+    # ---------- Density diversity bonus (small) ----------
     density = float(invariants.get('density', 0.0))
     if abs(violation) < 0.3:
         score += 0.02 * density * (1.0 - density)
+
+    # ---------- Subgroup clues (cheap heuristics) ----------
     subgroup = conjecture.subgroup
     if 'tree' in subgroup:
         leaves = float(invariants.get('number_of_leaves', 0.0))
@@ -40,5 +60,8 @@ def heuristic_score(G, invariants, conjecture):
     if 'claw_free' in subgroup:
         max_deg = float(invariants.get('maximum_degree', 0.0))
         score += 0.02 * (1.0 - max_deg / n)
+
+    # ---------- Tie-breaker ----------
     score += 0.01 * y_val / n
+
     return float(score)
