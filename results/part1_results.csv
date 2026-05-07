@@ -1,0 +1,2 @@
+conjecture_id,found,elapsed_seconds,score,graph6,evaluated,classes,x,x_value,y,y_value,sign,rhs,order,size,density,minimum_degree,maximum_degree,average_degree
+5952,True,0.780751,1,ZxKGWC@?G?_@?@??_?G?@??K??G??W??C??@???G??@_??@_??B_???_??w?,157,"claw_free,connected",diameter,10,independence_number,13,<=,12.0,27,37,0.10541310541310542,2,4,2.740740740740741

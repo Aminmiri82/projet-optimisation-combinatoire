@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Smoke test outputs (local / CI scratch)
+results/smoke*.csv
