@@ -25,35 +25,42 @@ This matches the stored benchmark counterexample values.
 
 ## Install
 
+From repo root:
+
+```bash
+./run.sh setup
+```
+
+Manual equivalent:
+
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 ```
 
-## Run
-source .venv/bin/activate
+## Run Part 1
 
-Quick smoke run:
-
-```bash
-PYTHONPATH=src python3 -m graphbench --limit 5 --time-limit 2
-```
-
-Single conjecture:
+Recommended (single command):
 
 ```bash
-PYTHONPATH=src python3 -m graphbench --only-id 980 --time-limit 10
+./run.sh part1
 ```
 
-Full benchmark:
+Useful variants:
 
 ```bash
-PYTHONPATH=src python3 -m graphbench --time-limit 60
+./run.sh smoke
+./run.sh one 980 10
+TIME_LIMIT=30 OUTPUT=results/part1_30s.csv ./run.sh part1
 ```
 
-Results are written to `results/part1_results.csv`.
+Manual CLI:
 
-## Part 2: FunSearch-Style Score Evolution
+```bash
+PYTHONPATH=src python3 -m graphbench --time-limit 60 --output results/part1_results.csv
+```
+
+## Run Part 2 (FunSearch)
 
 Generated scoring functions live in `src/graphbench/funsearch/candidates/`.
 Each candidate must define:
@@ -110,6 +117,42 @@ PYTHONPATH=src python3 -m graphbench.funsearch.cycle \
   --time-limit 3
 ```
 
+## Verify
+
+Verify that all found counterexamples in a result CSV satisfy class constraints and strictly violate the corresponding conjecture:
+
+```bash
+./run.sh verify
+```
+
+Or with a custom result file:
+
+```bash
+./run.sh verify results/part1_30s.csv
+```
+
+Manual CLI:
+
+```bash
+PYTHONPATH=src python3 -m graphbench.verify_results --input results/part1_results.csv
+```
+
+## Where Results Are
+
+- Part 1 default output: `results/part1_results.csv`
+- Additional Part 1 experiments: `results/` (e.g., `results/v4`, `results/iterations`)
+- FunSearch runs and candidate summaries: `results/funsearch/`
+- Dashboard files: `results_dashboard/`
+- Final reports: `report/report_fr.pdf`, `report/report_en.pdf`
+
+## One-Command Reproduction
+
+```bash
+./run.sh all
+```
+
+This runs: smoke test, Part 1 benchmark, verification, and FunSearch baseline evaluation.
+
 ## Architecture
 
 - `conjecture.py`: typed conjecture model and exact rational coefficient parsing.
@@ -122,3 +165,4 @@ PYTHONPATH=src python3 -m graphbench.funsearch.cycle \
 - `scoring.py`: Part 1 raw violation score.
 - `search.py`: population search loop.
 - `runner.py`: CLI and benchmark result writing.
+- `verify_results.py`: CLI verification for result CSV files.
