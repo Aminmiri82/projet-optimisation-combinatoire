@@ -15,6 +15,7 @@
 \usepackage{titlesec}
 \usepackage{graphicx}
 \usepackage{float}
+\usepackage{needspace}
 
 \definecolor{UnivAccent}{HTML}{1e3a5f}
 \definecolor{UnivMuted}{HTML}{5a6572}
@@ -22,8 +23,15 @@
 \geometry{margin=2.15cm}
 \hypersetup{colorlinks=true, linkcolor=black, urlcolor=blue}
 \setlength{\parindent}{0pt}
-\setlength{\parskip}{0.48em}
+\setlength{\parskip}{0.30em}
 \setlength{\headheight}{14pt}
+\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
+\setlength{\floatsep}{8pt plus 2pt minus 2pt}
+\setlength{\intextsep}{8pt plus 2pt minus 2pt}
+\setlength{\abovecaptionskip}{4pt}
+\setlength{\belowcaptionskip}{0pt}
+\setlength{\abovedisplayskip}{6pt plus 2pt minus 2pt}
+\setlength{\belowdisplayskip}{6pt plus 2pt minus 2pt}
 \pagestyle{fancy}
 \fancyhf{}
 \lhead{GraphBench Challenge}
@@ -32,6 +40,8 @@
 
 \titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
 \titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{0.8em}{0.4em}
+\titlespacing*{\subsection}{0pt}{0.6em}{0.3em}
 
 \lstdefinestyle{code}{
   basicstyle=\ttfamily\small,
@@ -44,7 +54,7 @@
   keywordstyle=\color{blue!60!black},
   commentstyle=\color{green!35!black}
 }
-\lstset{style=code, float, floatplacement=H}
+\lstset{style=code, float, floatplacement=H, aboveskip=6pt, belowskip=6pt}
 
 \begin{document}
 
@@ -156,7 +166,6 @@ The main search keeps a scored population. It starts from an initial population,
 
 The evaluation path is intentionally robust to automatically generated scores. If a scorer raises an exception, returns \texttt{None}, or produces a non-finite value, its objective becomes \(-\infty\) and the engine continues.
 
-\clearpage
 \begin{lstlisting}[language=Python,caption={Candidate evaluation in the search engine.}]
 def _evaluate(graph, conjecture, needed, scorer):
     invariants = compute_cached(graph, needed)
@@ -195,7 +204,6 @@ for graph in seed_graphs(classes, min_order, max_order):
         return population
 \end{lstlisting}
 
-\clearpage
 The first seeds were paths, cycles, cliques, and spider trees. Spiders were added because they can increase domination-style invariants without increasing matching as quickly. They are built from a center and several legs of controlled lengths.
 
 \begin{lstlisting}[language=Python,caption={Spider seeds introduced in v2.}]
@@ -214,6 +222,7 @@ def _spider(lengths):
 
 In v3, the initial population was expanded with double-stars, damaged clique chains, sparse connected graphs, triangles with attached paths, and clique--path--clique graphs. Double-stars target cases with many leaves around few centers. Damaged clique chains keep high density and many triangles while changing maximum degree and bridge structure. Clique--path--clique graphs are useful when spectral quantities and distances react strongly to bottlenecks.
 
+\Needspace{20\baselineskip}
 \begin{lstlisting}[language=Python,caption={Example clique--path--clique seed.}]
 def _clique_path_clique(left_size, right_size, path_length):
     left = list(range(left_size))

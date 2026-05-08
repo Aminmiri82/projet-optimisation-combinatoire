@@ -23,6 +23,21 @@ The benchmark uses reciprocal distance conventions for `proximity` and `remotene
 `proximity = 1 / max_average_distance` and `remoteness = 1 / min_average_distance`.
 This matches the stored benchmark counterexample values.
 
+## Quick Start (Run Everything)
+
+From repo root:
+
+```bash
+./run.sh all
+```
+
+This runs, in order:
+
+1. Part 1 smoke test (`./run.sh smoke`)
+2. Full Part 1 benchmark run (`./run.sh part1`)
+3. Verification of found counterexamples (`./run.sh verify`)
+4. FunSearch baseline evaluation (`./run.sh funsearch-baseline`)
+
 ## Install
 
 From repo root:
@@ -53,6 +68,10 @@ Useful variants:
 ./run.sh one 980 10
 TIME_LIMIT=30 OUTPUT=results/part1_30s.csv ./run.sh part1
 ```
+
+`./run.sh smoke` is a fast health-check run: it evaluates only 5 conjectures
+with a short time limit (2s by default) to quickly confirm that the full Part 1
+pipeline is working before launching longer runs.
 
 Manual CLI:
 

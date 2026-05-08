@@ -15,6 +15,7 @@
 \usepackage{titlesec}
 \usepackage{graphicx}
 \usepackage{float}
+\usepackage{needspace}
 
 \definecolor{UnivAccent}{HTML}{1e3a5f}
 \definecolor{UnivMuted}{HTML}{5a6572}
@@ -22,8 +23,15 @@
 \geometry{margin=2.15cm}
 \hypersetup{colorlinks=true, linkcolor=black, urlcolor=blue}
 \setlength{\parindent}{0pt}
-\setlength{\parskip}{0.48em}
+\setlength{\parskip}{0.30em}
 \setlength{\headheight}{14pt}
+\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
+\setlength{\floatsep}{8pt plus 2pt minus 2pt}
+\setlength{\intextsep}{8pt plus 2pt minus 2pt}
+\setlength{\abovecaptionskip}{4pt}
+\setlength{\belowcaptionskip}{0pt}
+\setlength{\abovedisplayskip}{6pt plus 2pt minus 2pt}
+\setlength{\belowdisplayskip}{6pt plus 2pt minus 2pt}
 \pagestyle{fancy}
 \fancyhf{}
 \lhead{GraphBench Challenge}
@@ -32,6 +40,8 @@
 
 \titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
 \titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{0.8em}{0.4em}
+\titlespacing*{\subsection}{0pt}{0.6em}{0.3em}
 
 \lstdefinestyle{code}{
   basicstyle=\ttfamily\small,
@@ -44,7 +54,7 @@
   keywordstyle=\color{blue!60!black},
   commentstyle=\color{green!35!black}
 }
-\lstset{style=code, float, floatplacement=H}
+\lstset{style=code, float, floatplacement=H, aboveskip=6pt, belowskip=6pt}
 
 \begin{document}
 
@@ -156,7 +166,6 @@ La fonction principale conserve une population de graphes scores. Elle commence 
 
 Le cœur de l'évaluation est volontairement robuste aux scores générés automatiquement. Si un score lève une exception, retourne \texttt{None} ou produit une valeur non finie, l'objectif devient \(-\infty\), mais le moteur continue.
 
-\clearpage
 \begin{lstlisting}[language=Python,caption={Evaluation d'un candidat dans le moteur de recherche.}]
 def _evaluate(graph, conjecture, needed, scorer):
     invariants = compute_cached(graph, needed)
@@ -195,7 +204,6 @@ for graph in seed_graphs(classes, min_order, max_order):
         return population
 \end{lstlisting}
 
-\clearpage
 Les premières graines étaient des chemins, cycles, cliques et araignées. Les araignées ont été ajoutées car elles augmentent certains invariants de domination sans augmenter aussi vite le couplage. Elles sont construites à partir d'un centre et de plusieurs pattes de longueurs contrôlées.
 
 \begin{lstlisting}[language=Python,caption={Araignées introduites en v2.}]
@@ -214,6 +222,7 @@ def _spider(lengths):
 
 En v3, la population initiale s'est élargie avec des doubles étoiles, des chaînes de cliques endommagées, des graphes connexes clairsemés, des triangles avec chemins attachés et des graphes clique--chemin--clique. Les doubles étoiles ciblent les cas où l'on veut beaucoup de feuilles autour de peu de sommets centraux. Les chaînes de cliques endommagées donnent une densité et des triangles élevés tout en modifiant le degré maximal ou la connectivité. Les graphes clique--chemin--clique sont utiles pour des conjectures où les grandeurs spectrales et les distances réagissent fortement à un goulot d'étranglement.
 
+\Needspace{20\baselineskip}
 \begin{lstlisting}[language=Python,caption={Exemple de graine clique--chemin--clique.}]
 def _clique_path_clique(left_size, right_size, path_length):
     left = list(range(left_size))
