@@ -14,6 +14,7 @@
 \usepackage{fancyhdr}
 \usepackage{titlesec}
 \usepackage{graphicx}
+\usepackage{float}
 
 \definecolor{UnivAccent}{HTML}{1e3a5f}
 \definecolor{UnivMuted}{HTML}{5a6572}
@@ -43,7 +44,7 @@
   keywordstyle=\color{blue!60!black},
   commentstyle=\color{green!35!black}
 }
-\lstset{style=code}
+\lstset{style=code, float, floatplacement=H}
 
 \begin{document}
 
@@ -75,13 +76,14 @@
     Enseignement & Optimisation combinatoire \\
     Enseignant & François DELBOT \\
     Année universitaire & 2025--2026 \\
-    Date de rendu & 7 mai 2026 \\
+    Date de rendu & 9 mai 2026 \\
     Dépôt GitHub & \url{https://github.com/Aminmiri82/projet-optimisation-combinatoire} \\
   \end{tabular}
 
   \vspace{1.35cm}
   \begin{tabular}{@{}r@{:\quad}l@{}}
     Conjectures réfutées & 100/100 \\
+    Score final (\(\sum_i c_i\)) & 136{,}80 \\
     Temps total Partie 1 & 136{,}80 s \\
     Temps moyen Partie 1 & 1{,}368 s \\
     FunSearch (GPT-5{,}5, \texttt{candidate\_006}) & 100/100 \\
@@ -98,21 +100,27 @@
 
 \section{Introduction et objectif}
 
-Le projet GraphBench demande de refuter automatiquement des conjectures de theorie des graphes. Une conjecture compare deux invariants d'un graphe, par exemple
+Le projet GraphBench demande de réfuter automatiquement des conjectures de théorie des graphes. Une conjecture compare deux invariants d'un graphe, par exemple
 \[
   y(G) \le f(x(G)) \quad \text{ou} \quad y(G) \ge f(x(G)).
 \]
-Un contre-exemple est un graphe appartenant aux classes imposees par le benchmark, pour lequel l'inegalite est strictement violee. Dans le benchmark utilise, les classes principales sont \texttt{connected}, \texttt{tree} et \texttt{claw\_free}.
+Un contre-exemple est un graphe appartenant aux classes imposées par le benchmark, pour lequel l'inégalité est strictement violée. Dans le benchmark utilisé, les classes principales sont \texttt{connected}, \texttt{tree} et \texttt{claw\_free}.
 
-Le systeme doit donc charger les conjectures, generer des graphes admissibles, calculer les invariants requis, maximiser la violation, puis produire un graphe au format \texttt{graph6}. Notre solution se decompose en deux parties. La Partie 1 est une recherche heuristique concue a la main. La Partie 2 implemente une boucle de type FunSearch ou un modele de langage propose des fonctions de score, qui sont ensuite evaluees automatiquement.
+Le système doit donc charger les conjectures, générer des graphes admissibles, calculer les invariants requis, maximiser la violation, puis produire un graphe au format \texttt{graph6}. Notre solution se décompose en deux parties. La Partie 1 est une recherche heuristique conçue à la main. La Partie 2 implémente une boucle de type FunSearch où un modèle de langage propose des fonctions de score, qui sont ensuite évaluées automatiquement.
 
-Le resultat principal est le suivant : la Partie 1 atteint 100/100 contre-exemples valides avec un cout total de 136.801705 secondes, soit 1.368017 seconde en moyenne. FunSearch atteint egalement 100/100 avec certains candidats, mais ne depasse pas le temps de l'heuristique manuelle finale.
+Le résultat principal est le suivant : la Partie 1 atteint 100/100 contre-exemples valides avec un coût total de 136.801705 secondes, soit 1.368017 seconde en moyenne. FunSearch atteint également 100/100 avec certains candidats, mais ne dépasse pas le temps de l'heuristique manuelle finale.
+
+\clearpage
+\begin{center}
+  {\LARGE\bfseries Partie 1}
+\end{center}
+\vspace{0.6em}
 
 \section{Heuristique simple}
 
 \subsection{Principe de validation}
 
-La validation finale utilise uniquement la violation mathematique de la conjecture. Pour une conjecture \(y \le f(x)\), la violation est
+La validation finale utilise uniquement la violation mathématique de la conjecture. Pour une conjecture \(y \le f(x)\), la violation est
 \[
   \text{violation}(G)=y(G)-f(x(G)).
 \]
@@ -120,9 +128,9 @@ Pour une conjecture \(y \ge f(x)\), elle est
 \[
   \text{violation}(G)=f(x(G))-y(G).
 \]
-Un graphe est accepte seulement si la violation est strictement positive et si les contraintes de classe sont verifiees apres recalcul des invariants. Cette separation est importante : le score heuristique peut guider la recherche, mais il ne peut pas valider un faux contre-exemple.
+Un graphe est accepté seulement si la violation est strictement positive et si les contraintes de classe sont vérifiées après recalcul des invariants. Cette séparation est importante : le score heuristique peut guider la recherche, mais il ne peut pas valider un faux contre-exemple.
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \begin{tabular}{ll}
 \toprule
@@ -132,11 +140,11 @@ Module & Role \\
 \texttt{conjecture.py} & Objet conjecture et calcul exact de la violation \\
 \texttt{invariants.py} & Calcul des invariants avec \texttt{networkx} et \texttt{numpy} \\
 \texttt{classes.py} & Tests \texttt{connected}, \texttt{tree}, \texttt{claw\_free} \\
-\texttt{generators.py} & Generation initiale et familles de graphes \\
+\texttt{generators.py} & Génération initiale et familles de graphes \\
 \texttt{mutations.py} & Modifications locales de graphes \\
-\texttt{repair.py} & Reparation apres generation ou mutation \\
-\texttt{search.py} & Selection, mutation, evaluation et arret \\
-\texttt{verify.py} & Verification stricte des graphes \texttt{graph6} \\
+\texttt{repair.py} & Réparation après génération ou mutation \\
+\texttt{search.py} & Sélection, mutation, évaluation et arrêt \\
+\texttt{verify.py} & Vérification stricte des graphes \texttt{graph6} \\
 \bottomrule
 \end{tabular}
 \caption{Architecture de la Partie 1.}
@@ -144,10 +152,11 @@ Module & Role \\
 
 \subsection{Boucle de recherche}
 
-La fonction principale conserve une population de graphes scores. Elle commence par une population initiale, selectionne ensuite des parents prometteurs, applique une mutation locale ou injecte parfois un graphe frais, repare le graphe si necessaire, puis calcule seulement les invariants utiles a la conjecture courante. Les candidats sont tries par score objectif, mais la condition d'arret reste la validation stricte.
+La fonction principale conserve une population de graphes scores. Elle commence par une population initiale, sélectionne ensuite des parents prometteurs, applique une mutation locale ou injecte parfois un graphe frais, répare le graphe si nécessaire, puis calcule seulement les invariants utiles à la conjecture courante. Les candidats sont triés par score objectif, mais la condition d'arrêt reste la validation stricte.
 
-Le coeur de l'evaluation est volontairement robuste aux scores generes automatiquement. Si un score leve une exception, retourne \texttt{None} ou produit une valeur non finie, l'objectif devient \(-\infty\), mais le moteur continue.
+Le cœur de l'évaluation est volontairement robuste aux scores générés automatiquement. Si un score lève une exception, retourne \texttt{None} ou produit une valeur non finie, l'objectif devient \(-\infty\), mais le moteur continue.
 
+\clearpage
 \begin{lstlisting}[language=Python,caption={Evaluation d'un candidat dans le moteur de recherche.}]
 def _evaluate(graph, conjecture, needed, scorer):
     invariants = compute_cached(graph, needed)
@@ -161,11 +170,11 @@ def _evaluate(graph, conjecture, needed, scorer):
     return objective, violation_score(graph, invariants, conjecture), invariants
 \end{lstlisting}
 
-\subsection{Evolution de \texttt{generate\_initial\_population}}
+\subsection{Évolution de \texttt{generate\_initial\_population}}
 
-L'amelioration la plus decisive de la Partie 1 n'a pas ete le score seul, mais l'espace de graphes donne au moteur. Au depart, \texttt{generate\_initial\_population} ne faisait qu'echantillonner aleatoirement des graphes selon la classe demandee. Cette approche explore, mais elle manque les structures extremales rares.
+L'amélioration la plus décisive de la Partie 1 n'a pas été le score seul, mais l'espace de graphes donné au moteur. Au départ, \texttt{generate\_initial\_population} ne faisait qu'échantillonner aléatoirement des graphes selon la classe demandée. Cette approche explore, mais elle manque les structures extrémales rares.
 
-\begin{lstlisting}[language=Python,caption={Version v1 : population aleatoire reparee.}]
+\begin{lstlisting}[language=Python,caption={Version v1 : population aléatoire réparée.}]
 population = []
 while len(population) < size and attempts < size * 80:
     n = rng.randint(min_order, max_order)
@@ -175,7 +184,7 @@ while len(population) < size and attempts < size * 80:
         population.append(_normalize_nodes(graph))
 \end{lstlisting}
 
-En v2, nous avons ajoute une phase deterministe avant l'echantillonnage aleatoire. La population commence par des graphes simples et quelques familles ciblees. Ce changement transforme la recherche : au lieu d'attendre qu'une mutation aleatoire tombe sur une bonne forme, le moteur dispose immediatement de contre-exemples proches.
+En v2, nous avons ajouté une phase déterministe avant l'échantillonnage aléatoire. La population commence par des graphes simples et quelques familles ciblées. Ce changement transforme la recherche : au lieu d'attendre qu'une mutation aléatoire tombe sur une bonne forme, le moteur dispose immédiatement de contre-exemples proches.
 
 \begin{lstlisting}[language=Python,caption={Version v2 et suivantes : graines structurelles avant le hasard.}]
 for graph in seed_graphs(classes, min_order, max_order):
@@ -186,9 +195,10 @@ for graph in seed_graphs(classes, min_order, max_order):
         return population
 \end{lstlisting}
 
-Les premieres graines etaient des chemins, cycles, cliques et araignees. Les araignees ont ete ajoutees car elles augmentent certains invariants de domination sans augmenter aussi vite le couplage. Elles sont construites a partir d'un centre et de plusieurs pattes de longueurs controlees.
+\clearpage
+Les premières graines étaient des chemins, cycles, cliques et araignées. Les araignées ont été ajoutées car elles augmentent certains invariants de domination sans augmenter aussi vite le couplage. Elles sont construites à partir d'un centre et de plusieurs pattes de longueurs contrôlées.
 
-\begin{lstlisting}[language=Python,caption={Araignees introduites en v2.}]
+\begin{lstlisting}[language=Python,caption={Araignées introduites en v2.}]
 def _spider(lengths):
     graph = nx.Graph()
     graph.add_node(0)
@@ -202,7 +212,7 @@ def _spider(lengths):
     return graph
 \end{lstlisting}
 
-En v3, la population initiale s'est elargie avec des doubles etoiles, des chaines de cliques endommagees, des graphes connexes clairsemes, des triangles avec chemins attaches et des graphes clique--chemin--clique. Les doubles etoiles ciblent les cas ou l'on veut beaucoup de feuilles autour de peu de sommets centraux. Les chaines de cliques endommagees donnent une densite et des triangles eleves tout en modifiant le degre maximal ou la connectivite. Les graphes clique--chemin--clique sont utiles pour des conjectures ou les grandeurs spectrales et les distances reagissent fortement a un goulot d'etranglement.
+En v3, la population initiale s'est élargie avec des doubles étoiles, des chaînes de cliques endommagées, des graphes connexes clairsemés, des triangles avec chemins attachés et des graphes clique--chemin--clique. Les doubles étoiles ciblent les cas où l'on veut beaucoup de feuilles autour de peu de sommets centraux. Les chaînes de cliques endommagées donnent une densité et des triangles élevés tout en modifiant le degré maximal ou la connectivité. Les graphes clique--chemin--clique sont utiles pour des conjectures où les grandeurs spectrales et les distances réagissent fortement à un goulot d'étranglement.
 
 \begin{lstlisting}[language=Python,caption={Exemple de graine clique--chemin--clique.}]
 def _clique_path_clique(left_size, right_size, path_length):
@@ -221,57 +231,63 @@ def _clique_path_clique(left_size, right_size, path_length):
     graph.add_edge(previous, right[0])
 \end{lstlisting}
 
-La v4 a stabilise les derniers echecs en ajoutant les chemins branches et les queues triangulaires. Les chemins branches gardent une structure d'arbre, mais creent localement des effets forts sur la domination independante, les feuilles et certains indices de Zagreb. Les queues triangulaires conservent une structure proche du sans-griffe tout en controlant les distances.
+La v4 a stabilisé les derniers échecs en ajoutant les chemins branchés et les queues triangulaires. Les chemins branchés gardent une structure d'arbre, mais créent localement des effets forts sur la domination indépendante, les feuilles et certains indices de Zagreb. Les queues triangulaires conservent une structure proche du sans-griffe tout en contrôlant les distances.
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \begin{tabular}{p{1.3cm}p{6.2cm}p{6cm}}
 \toprule
 Version & Ajouts dans la population initiale & Motivation \\
 \midrule
-v1 & Generation aleatoire par classe : arbres, chemins, cycles, cliques, \texttt{G(n,p)}, graphes denses sans griffe. & Obtenir une base modulaire et verifier le pipeline. \\
-v2 & Graines deterministes, chemins/cycles/cliques de tailles fixes, araignees. & Donner au moteur des graphes extremaux simples des le debut. \\
-v3 & Doubles etoiles, cliques endommagees, graphes clairsemes, triangles avec chemins, clique--chemin--clique. & Cibler domination, densite, triangles, distances et effets spectraux. \\
-v4 & Chemins branches et queues triangulaires. & Resoudre les derniers cas d'arbres, de graphes sans griffe et de distances spectrales. \\
+v1 & Génération aléatoire par classe : arbres, chemins, cycles, cliques, \texttt{G(n,p)}, graphes denses sans griffe. & Obtenir une base modulaire et vérifier le pipeline. \\
+v2 & Graines déterministes, chemins/cycles/cliques de tailles fixes, araignées. & Donner au moteur des graphes extrémaux simples dès le début. \\
+v3 & Doubles étoiles, cliques endommagées, graphes clairsemés, triangles avec chemins, clique--chemin--clique. & Cibler domination, densité, triangles, distances et effets spectraux. \\
+v4 & Chemins branchés et queues triangulaires. & Résoudre les derniers cas d'arbres, de graphes sans griffe et de distances spectrales. \\
 \bottomrule
 \end{tabular}
-\caption{Evolution de \texttt{generate\_initial\_population}.}
+\caption{Évolution de \texttt{generate\_initial\_population}.}
 \end{table}
 
 \subsection{Score manuel}
 
-Le score manuel part de la violation brute et ajoute de faibles termes de guidage normalises. Le coefficient dominant reste la violation, afin de ne pas eloigner la recherche de l'objectif mathematique.
+Le score manuel part de la violation brute et ajoute de faibles termes de guidage normalisés. Le coefficient dominant reste la violation, afin de ne pas éloigner la recherche de l'objectif mathématique.
 
-\begin{lstlisting}[language=Python,caption={Forme simplifiee du score manuel.}]
+\begin{lstlisting}[language=Python,caption={Forme simplifiée du score manuel.}]
 score = 100.0 * violation
 score += 0.15 * y_value if conjecture.sign == "<=" else -0.15 * y_value
 score += 0.12 * clamp(direction_from_derivative) * x_value
 score += structural_guidance(G, invariants, conjecture)
 \end{lstlisting}
 
-Les termes structurels regardent la densite, la proportion de feuilles, les triangles et le diametre. Ils favorisent les formes coherentes avec l'invariant que l'on veut rendre grand ou petit. Cependant, les experiences montrent que ces termes ont surtout servi a departager des candidats proches ; le saut de performance vient principalement des familles de graphes initiales.
+Les termes structurels regardent la densité, la proportion de feuilles, les triangles et le diamètre. Ils favorisent les formes cohérentes avec l'invariant que l'on veut rendre grand ou petit. Cependant, les expériences montrent que ces termes ont surtout servi à départager des candidats proches ; le saut de performance vient principalement des familles de graphes initiales.
+
+\clearpage
+\begin{center}
+  {\LARGE\bfseries Partie 2}
+\end{center}
+\vspace{0.6em}
 
 \section{Architecture FunSearch}
 
-La Partie 2 implemente une boucle inspiree de FunSearch. Le modele genere une fonction Python de score, nommee \texttt{heuristic\_score}. Elle est sauvegardee dans \path{src/graphbench/funsearch/candidates/}, puis evaluee par le meme moteur que la Partie 1. Seul le score change ; les generateurs, mutations, invariants et verifications restent identiques.
+La Partie 2 implémente une boucle inspirée de FunSearch. Le modèle génère une fonction Python de score, nommée \texttt{heuristic\_score}. Elle est sauvegardée dans \path{src/graphbench/funsearch/candidates/}, puis évaluée par le même moteur que la Partie 1. Seul le score change ; les générateurs, mutations, invariants et vérifications restent identiques.
 
 Le cycle est le suivant :
 \begin{enumerate}
-  \item lire le registre des candidats deja evalues ;
-  \item selectionner les meilleurs fichiers sources ;
-  \item construire un prompt avec ces sources et leurs resultats ;
+  \item lire le registre des candidats déjà évalués ;
+  \item sélectionner les meilleurs fichiers sources ;
+  \item construire un prompt avec ces sources et leurs résultats ;
   \item appeler OpenRouter pour obtenir une nouvelle fonction Python ;
   \item extraire et valider localement la fonction ;
-  \item lancer l'evaluateur et ajouter une ligne dans \path{results/funsearch/registry.csv}.
+  \item lancer l'évaluateur et ajouter une ligne dans \path{results/funsearch/registry.csv}.
 \end{enumerate}
 
-Nous avons d'abord utilise GPT-5.5 avec raisonnement faible, car il etait attendu comme fort pour la generation de code et d'heuristiques, tout en gardant un cout inferieur aux modes de raisonnement plus eleves. Ensuite, pour une sequence plus longue de 25 generations, nous sommes passes a DeepSeek pour des raisons de cout.
+Nous avons d'abord utilisé GPT-5.5 avec raisonnement faible, car il était attendu comme fort pour la génération de code et d'heuristiques, tout en gardant un coût inférieur aux modes de raisonnement plus élevés. Ensuite, pour une séquence plus longue de 25 générations, nous sommes passés à DeepSeek pour des raisons de coût.
 
-Le commit \texttt{7527406} correspond a l'experience GPT-5.5 initiale. Son registre montre six generations principales : \texttt{candidate\_001} et \texttt{candidate\_002} trouvent 29/30 sur une evaluation courte, \texttt{candidate\_003} trouve 28/30, \texttt{candidate\_004} trouve 97/100, \texttt{candidate\_005} trouve 98/100, et \texttt{candidate\_006} ne trouve d'abord que 95/100 dans une ligne du registre. Apres reevaluation complete dans \path{candidate_006_100.csv}, \texttt{candidate\_006} est le seul candidat de cette serie a atteindre 100/100.
+Le commit \texttt{7527406} correspond à l'expérience GPT-5.5 initiale. Son registre montre six générations principales : \texttt{candidate\_001} et \texttt{candidate\_002} trouvent 29/30 sur une évaluation courte, \texttt{candidate\_003} trouve 28/30, \texttt{candidate\_004} trouve 97/100, \texttt{candidate\_005} trouve 98/100, et \texttt{candidate\_006} ne trouve d'abord que 95/100 dans une ligne du registre. Après réévaluation complète dans \path{candidate_006_100.csv}, \texttt{candidate\_006} est le seul candidat de cette série à atteindre 100/100.
 
 \subsection{Analyse du candidat GPT-5.5 \texttt{candidate\_006}}
 
-Le candidat 006 reste proche du score manuel, mais il introduit une idee interessante : donner un bonus aux graphes proches de la frontiere de decision. Il multiplie la violation par 50, puis ajoute un terme gaussien maximal lorsque la violation est proche de zero.
+Le candidat 006 reste proche du score manuel, mais il introduit une idée intéressante : donner un bonus aux graphes proches de la frontière de décision. Il multiplie la violation par 50, puis ajoute un terme gaussien maximal lorsque la violation est proche de zéro.
 
 \begin{lstlisting}[language=Python,caption={Extrait de \texttt{candidate\_006.py}.}]
 score = 50.0 * violation
@@ -280,9 +296,9 @@ diff_ratio = diff_abs / (diff_abs + n + 1.0)
 score += 3.0 * boundary_weight * diff_ratio
 \end{lstlisting}
 
-Ce terme est raisonnable pour une recherche locale : un graphe presque contre-exemple est souvent plus utile comme parent qu'un graphe tres loin de la frontiere. Le candidat ajoute aussi une direction derivee du polynome \(f\), utilisee surtout quand la violation est encore negative.
+Ce terme est raisonnable pour une recherche locale : un graphe presque contre-exemple est souvent plus utile comme parent qu'un graphe très loin de la frontière. Le candidat ajoute aussi une direction dérivée du polynôme \(f\), utilisée surtout quand la violation est encore négative.
 
-\begin{lstlisting}[language=Python,caption={Guidage par derivee dans \texttt{candidate\_006.py}.}]
+\begin{lstlisting}[language=Python,caption={Guidage par dérivée dans \texttt{candidate\_006.py}.}]
 if sign == '<=':
     deriv_bonus = deriv / (abs(deriv) + 1.0)
 else:
@@ -291,11 +307,11 @@ if violation < 0:
     score += 0.5 * deriv_bonus
 \end{lstlisting}
 
-Enfin, il contient des indices faibles pour les arbres et les graphes sans griffe. Pour les arbres, il favorise les feuilles ; pour les graphes sans griffe, il penalise legerement un degre maximal trop eleve. Ces choix ne suffisent pas a battre la Partie 1, mais ils produisent un score stable et compatible avec le moteur.
+Enfin, il contient des indices faibles pour les arbres et les graphes sans griffe. Pour les arbres, il favorise les feuilles ; pour les graphes sans griffe, il pénalise légèrement un degré maximal trop élevé. Ces choix ne suffisent pas à battre la Partie 1, mais ils produisent un score stable et compatible avec le moteur.
 
 \subsection{Analyse du candidat DeepSeek \texttt{candidate\_014}}
 
-Dans la sequence DeepSeek de 25 cycles, \texttt{candidate\_014} est le meilleur candidat du registre. Il reprend presque la meme structure que 006, mais avec une frontiere un peu plus accentuee et une penalite explicite si la direction derivee va contre l'objectif.
+Dans la séquence DeepSeek de 25 cycles, \texttt{candidate\_014} est le meilleur candidat du registre. Il reprend presque la même structure que 006, mais avec une frontière un peu plus accentuée et une pénalité explicite si la direction dérivée va contre l'objectif.
 
 \begin{lstlisting}[language=Python,caption={Extrait de \texttt{candidate\_014.py}.}]
 boundary_weight = math.exp(-6.0 * violation * violation)
@@ -312,60 +328,79 @@ if violation < 0:
     score += 0.5 * dir_norm - away_penalty
 \end{lstlisting}
 
-Scientifiquement, ce candidat est coherent : il conserve la violation comme signal principal, encourage les points proches de la frontiere et evite certaines directions localement defavorables. Son resultat complet est 100/100, avec un cout total de 166.636643 secondes. Il est donc valide mais plus lent que l'heuristique manuelle et que le candidat GPT-5.5 006.
+Scientifiquement, ce candidat est cohérent : il conserve la violation comme signal principal, encourage les points proches de la frontière et évite certaines directions localement défavorables. Son résultat complet est 100/100, avec un coût total de 166.636643 secondes. Il est donc valide mais plus lent que l'heuristique manuelle et que le candidat GPT-5.5 006.
 
-\section{Resultats experimentaux}
+\section{Résultats expérimentaux}
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \begin{tabular}{lrrr}
 \toprule
-Methode & Trouve & Cout total & Temps moyen \\
+Méthode & Trouvé & Coût total & Temps moyen \\
 \midrule
 Heuristique manuelle Partie 1 & 100/100 & 136.80 & 1.368 s \\
 FunSearch GPT-5.5, candidat 006 & 100/100 & 157.50 & 1.575 s \\
 FunSearch DeepSeek, candidat 014 & 100/100 & 166.64 & 1.666 s \\
 \bottomrule
 \end{tabular}
-\caption{Resultats finaux sur les 100 conjectures.}
+\caption{Résultats finaux sur les 100 conjectures.}
 \end{table}
 
-La Partie 1 est la meilleure en temps moyen. Elle obtient une mediane de 0.561114 seconde et un maximum de 5.347417 secondes. Le candidat GPT-5.5 006 atteint 100/100 avec un cout total de 157.502736 secondes. Le candidat DeepSeek 014 atteint 100/100 avec un cout total de 166.636643 secondes et constitue le meilleur candidat de la sequence DeepSeek.
+La Partie 1 est la meilleure en temps moyen. Elle obtient une médiane de 0.561114 seconde et un maximum de 5.347417 secondes. Le candidat GPT-5.5 006 atteint 100/100 avec un coût total de 157.502736 secondes. Le candidat DeepSeek 014 atteint 100/100 avec un coût total de 166.636643 secondes et constitue le meilleur candidat de la séquence DeepSeek.
 
-Le fait que FunSearch atteigne 100/100 est important : l'architecture produit des fonctions executables et valides. En revanche, elle n'ameliore pas le temps final. L'explication la plus probable est que le moteur de Partie 1 etait deja tres fortement aide par ses familles initiales. Lorsque le bon graphe est deja present dans la population initiale ou proche d'elle, la qualite fine du score devient secondaire.
+Le fait que FunSearch atteigne 100/100 est important : l'architecture produit des fonctions exécutables et valides. En revanche, elle n'améliore pas le temps final. L'explication la plus probable est que le moteur de Partie 1 était déjà très fortement aidé par ses familles initiales. Lorsque le bon graphe est déjà présent dans la population initiale ou proche d'elle, la qualité fine du score devient secondaire.
 
 \section{Discussion scientifique}
 
-Les conjectures faciles etaient celles pour lesquelles une famille extremale simple existait : petits graphes complets pour certains cas de clique ou de degre moyen, chemins pour certains cas de distance, araignees pour domination totale contre couplage, doubles etoiles pour domination independante et couverture.
+Les conjectures faciles étaient celles pour lesquelles une famille extrémale simple existait : petits graphes complets pour certains cas de clique ou de degré moyen, chemins pour certains cas de distance, araignées pour domination totale contre couplage, doubles étoiles pour domination indépendante et couverture.
 
-Les conjectures difficiles combinaient souvent des invariants couteux ou sensibles : distance, valeurs propres, domination, domination totale et domination independante. Les cas spectraux incluaient notamment la plus grande valeur propre de distance et la deuxieme plus petite valeur propre du Laplacien. La correction de \texttt{proximity} et \texttt{remoteness} a ete un point cle : le benchmark utilise les conventions reciproques
+Les conjectures difficiles combinaient souvent des invariants coûteux ou sensibles : distance, valeurs propres, domination, domination totale et domination indépendante. Les cas spectraux incluaient notamment la plus grande valeur propre de distance et la deuxième plus petite valeur propre du Laplacien. La correction de \texttt{proximity} et \texttt{remoteness} a été un point clé : le benchmark utilise les conventions réciproques
 \[
 \texttt{proximity}=1/\max \overline{d}, \qquad
 \texttt{remoteness}=1/\min \overline{d}.
 \]
 Avant cette correction, plusieurs cas semblaient difficiles pour de mauvaises raisons.
 
-L'enseignement principal est que la generation de familles de graphes a compte davantage que le faconnage du score. Les mutations locales explorent efficacement autour d'une bonne forme, mais elles decouvrent mal certaines structures rares. En ajoutant les bonnes graines, on change la topologie de l'espace de recherche : le moteur commence pres des regions ou la violation positive existe.
+L'enseignement principal est que la génération de familles de graphes a compté davantage que le façonnage du score. Les mutations locales explorent efficacement autour d'une bonne forme, mais elles découvrent mal certaines structures rares. En ajoutant les bonnes graines, on change la topologie de l'espace de recherche : le moteur commence près des régions où la violation positive existe.
 
-L'IA a ete utile pour proposer des fonctions de score, mettre en place la boucle FunSearch et explorer des variantes. Elle a ete moins decisive pour identifier les familles extremales et pour comprendre les conventions specifiques du benchmark. L'intervention humaine est restee necessaire pour verifier les invariants, interpreter les echecs, choisir les graines et maintenir une validation stricte.
+L'IA a été utile pour proposer des fonctions de score, mettre en place la boucle FunSearch et explorer des variantes. Elle a été moins décisive pour identifier les familles extrémales et pour comprendre les conventions spécifiques du benchmark. L'intervention humaine est restée nécessaire pour vérifier les invariants, interpréter les échecs, choisir les graines et maintenir une validation stricte.
 
-\section{Dependances et bibliotheques}
+\subsection{Récapitulatif des questions du sujet}
 
-La solution est volontairement legere. Le fichier \path{requirements.txt} contient :
+\begin{enumerate}
+  \item \textbf{Quelles conjectures sont faciles à réfuter ?}\\
+  Les plus faciles sont celles pour lesquelles une famille extrémale simple existe déjà dans la population initiale (petites cliques, chemins, araignées, doubles étoiles). Dans ces cas, la recherche locale trouve rapidement une violation positive.
 
-\begin{table}[h]
+  \item \textbf{Quels invariants semblent difficiles à manipuler ?}\\
+  Les invariants les plus difficiles sont ceux liés aux distances, au spectral et à la domination (\texttt{largest\_distance\_eigenvalue}, \texttt{second\_smallest\_laplace\_eigenvalue}, \texttt{domination\_number}, \texttt{total\_domination\_number}, \texttt{independent\_domination\_number}), car ils sont sensibles à de petites modifications structurelles.
+
+  \item \textbf{Quelles mutations sont efficaces ?}\\
+  Les mutations locales sont efficaces pour explorer autour d'une bonne forme, mais elles sont surtout performantes quand elles partent de graines structurelles pertinentes. En pratique, leur rôle principal est l'optimisation fine autour de graphes déjà prometteurs.
+
+  \item \textbf{L'architecture FunSearch améliore-t-elle réellement l'heuristique initiale ?}\\
+  FunSearch améliore l'automatisation de la recherche de scores et produit des candidats valides atteignant 100/100. En revanche, dans nos expériences finales, elle n'améliore pas le temps total par rapport à la meilleure heuristique manuelle de la Partie 1.
+
+  \item \textbf{L'IA a-t-elle produit des idées utiles ou seulement du code ?}\\
+  L'IA a produit des idées utiles de scoring (guidage proche de la frontière, termes dérivés, ajustements structurels) et une boucle d'évolution exploitable. Cependant, les gains majeurs viennent surtout de la conception humaine des familles initiales et de la validation expérimentale.
+\end{enumerate}
+
+\section{Dépendances et bibliothèques}
+
+La solution est volontairement légère. Le fichier \path{requirements.txt} contient :
+
+\begin{table}[H]
 \centering
 \begin{tabular}{ll}
 \toprule
-Dependance & Utilisation \\
+Dépendance & Utilisation \\
 \midrule
-\texttt{networkx >= 3.2} & Representation des graphes, generateurs, connectivite, line graphs, graph6 \\
-\texttt{numpy >= 1.26} & Calcul numerique, notamment pour les invariants spectraux \\
+\texttt{networkx >= 3.2} & Représentation des graphes, générateurs, connectivité, line graphs, graph6 \\
+\texttt{numpy >= 1.26} & Calcul numérique, notamment pour les invariants spectraux \\
 \bottomrule
 \end{tabular}
-\caption{Dependances Python directes.}
+\caption{Dépendances Python directes.}
 \end{table}
 
-La bibliotheque standard Python est utilisee pour les fichiers CSV, les chemins, le temps, l'import dynamique de candidats FunSearch, les nombres aleatoires reproductibles et la gestion JSON. Pour la Partie 2, OpenRouter est appele via un client local du depot ; la cle API n'est pas versionnee. Le rapport est ecrit en LaTeX et compile avec \texttt{pdflatex}.
+La bibliothèque standard Python est utilisée pour les fichiers CSV, les chemins, le temps, l'import dynamique de candidats FunSearch, les nombres aléatoires reproductibles et la gestion JSON. Pour la Partie 2, OpenRouter est appelé via un client local du dépôt ; la clé API n'est pas versionnée. Le rapport est écrit en LaTeX et compilé avec \texttt{pdflatex}.
 
 \end{document}
