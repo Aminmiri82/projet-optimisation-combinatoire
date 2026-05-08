@@ -1,0 +1,2 @@
+conjecture_id,found,elapsed_seconds,score,graph6,evaluated,classes,x,x_value,y,y_value,sign,rhs,order,size,density,minimum_degree,maximum_degree,average_degree
+4247,False,7.448762,0,OsaCCA?_C?O?_?_?O?C??,80,"connected,tree",diameter,2,independent_domination_number,1,<=,1.0,16,15,0.125,1,15,1.875

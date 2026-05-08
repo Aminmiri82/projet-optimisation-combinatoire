@@ -1,0 +1,2 @@
+conjecture_id,found,elapsed_seconds,score,graph6,evaluated,classes,x,x_value,y,y_value,sign,rhs,order,size,density,minimum_degree,maximum_degree,average_degree
+5421,True,0.117798,0.0195857521746,VhCGGC@?G?_@?@??_?G?@??C??G??O??O??G??A???O?,101,"connected,tree",remoteness,0.18803418803418803,domination_number,6,>=,6.019585752174578,23,22,0.08695652173913043,1,7,1.9130434782608696

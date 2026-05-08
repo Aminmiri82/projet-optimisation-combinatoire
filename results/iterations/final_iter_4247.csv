@@ -1,0 +1,2 @@
+conjecture_id,found,elapsed_seconds,score,graph6,evaluated,classes,x,x_value,y,y_value,sign,rhs,order,size,density,minimum_degree,maximum_degree,average_degree
+4247,True,0.021659,4,A_,1,"connected,tree",diameter,1,independent_domination_number,1,<=,-3.0,2,1,1.0,1,1,1.0

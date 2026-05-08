@@ -1,0 +1,2 @@
+conjecture_id,found,elapsed_seconds,score,graph6,evaluated,classes,x,x_value,y,y_value,sign,rhs,order,size,density,minimum_degree,maximum_degree,average_degree
+3191,True,0.098373,0.0849673202614,JhCO__OC?_?,81,connected,proximity,0.29411764705882354,vertex_cover_number,2,>=,2.0849673202614376,11,10,0.18181818181818182,1,8,1.8181818181818181

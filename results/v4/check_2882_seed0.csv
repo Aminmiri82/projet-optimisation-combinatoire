@@ -1,0 +1,2 @@
+conjecture_id,found,elapsed_seconds,score,graph6,evaluated,classes,x,x_value,y,y_value,sign,rhs,order,size,density,minimum_degree,maximum_degree,average_degree
+2882,False,20.099211,1.7763568394e-15,ThGI?CG?G@?@?A??_O??@??G??G??G??C??@,4523,connected,second_zagreb_index,103,independent_domination_number,10,<=,9.999999999999998,21,20,0.09523809523809523,1,3,1.9047619047619047

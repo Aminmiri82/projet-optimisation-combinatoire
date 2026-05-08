@@ -1,0 +1,2 @@
+conjecture_id,found,elapsed_seconds,score,graph6,evaluated,classes,x,x_value,y,y_value,sign,rhs,order,size,density,minimum_degree,maximum_degree,average_degree
+3368,True,0.471345,0.513926871411,ShCG?C@?G?_@?A?A?@??O?A@???_??K??,549,connected,remoteness,0.23750000000000002,matching_number,6,>=,6.513926871410703,20,19,0.1,1,7,1.9

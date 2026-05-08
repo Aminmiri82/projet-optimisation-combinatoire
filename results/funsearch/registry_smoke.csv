@@ -1,0 +1,2 @@
+candidate,output,found,total,cost,avg_time_found
+src/graphbench/funsearch/candidates/baseline.py,results/funsearch/baseline_smoke.csv,5,5,0.177512,0.035502

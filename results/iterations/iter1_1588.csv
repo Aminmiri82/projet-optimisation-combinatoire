@@ -1,0 +1,2 @@
+conjecture_id,found,elapsed_seconds,score,graph6,evaluated,classes,x,x_value,y,y_value,sign,rhs,order,size,density,minimum_degree,maximum_degree,average_degree
+1588,True,0.367324,1,X??_??OQ@?A?_?OO?_C???A?a_??_???GA????@?????@G?_??E,175,connected,total_domination_number,12,matching_number,9,>=,10.0,25,24,0.08,1,5,1.92

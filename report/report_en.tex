@@ -1,0 +1,371 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{geometry}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{xurl}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{graphicx}
+
+\definecolor{UnivAccent}{HTML}{1e3a5f}
+\definecolor{UnivMuted}{HTML}{5a6572}
+
+\geometry{margin=2.15cm}
+\hypersetup{colorlinks=true, linkcolor=black, urlcolor=blue}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.48em}
+\setlength{\headheight}{14pt}
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{GraphBench Challenge}
+\rhead{Combinatorial Optimization}
+\cfoot{\thepage}
+
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.6em}{}
+
+\lstdefinestyle{code}{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  framerule=0.3pt,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  keywordstyle=\color{blue!60!black},
+  commentstyle=\color{green!35!black}
+}
+\lstset{style=code}
+
+\begin{document}
+
+\pagenumbering{gobble}
+\begin{titlepage}
+  \centering
+  \vspace*{0.6cm}
+
+  \includegraphics[width=44mm]{logo_Paris_Nanterre_couleur_RVB.png}
+
+  \vspace{0.75cm}
+  {\color{UnivAccent}\rule{0.72\textwidth}{0.65pt}}
+  \vspace{0.55cm}
+
+  {\large\scshape Université Paris Nanterre\par}
+  \vspace{0.25cm}
+  {\normalsize Master 1 MIAGE\par}
+  \vspace{0.15cm}
+  {\color{UnivMuted}\small Combinatorial Optimization\par}
+
+  \vspace{1.35cm}
+  {\LARGE\bfseries GraphBench Challenge\par}
+  \vspace{0.45cm}
+  {\large Automatic Refutation of Graph Theory Conjectures\par}
+
+  \vspace{1.45cm}
+  \begin{tabular}{@{}r@{:\quad}l@{}}
+    Authors & Seyed Amineddin MIRI and Marie BIBI \\
+    Course & Combinatorial Optimization \\
+    Instructor & François DELBOT \\
+    Academic year & 2025--2026 \\
+    Submission date & May 7, 2026 \\
+    Repository & \url{https://github.com/Aminmiri82/projet-optimisation-combinatoire} \\
+  \end{tabular}
+
+  \vspace{1.35cm}
+  \begin{tabular}{@{}r@{:\quad}l@{}}
+    Refuted conjectures & 100/100 \\
+    Part 1 total time & 136.80 s \\
+    Part 1 average time & 1.368 s \\
+    FunSearch (GPT-5.5, \texttt{candidate\_006}) & 100/100 \\
+    FunSearch (DeepSeek, \texttt{candidate\_014}) & 100/100 \\
+  \end{tabular}
+
+  \vfill
+  {\color{UnivMuted}\small Figures are sourced from the repository CSV exports and Git history.}
+\end{titlepage}
+\pagenumbering{arabic}
+
+\tableofcontents
+\clearpage
+
+\section{Introduction and Objective}
+
+GraphBench asks for automatic refutation of graph theory conjectures. A conjecture compares two graph invariants, for instance
+\[
+  y(G) \le f(x(G)) \quad \text{or} \quad y(G) \ge f(x(G)).
+\]
+A counterexample is a graph in the required benchmark class for which the inequality is strictly violated. The main benchmark classes are \texttt{connected}, \texttt{tree}, and \texttt{claw\_free}.
+
+The program must load conjectures, generate admissible graphs, compute the required invariants, maximize the violation, and output a graph in \texttt{graph6} format. Our solution has two parts. Part 1 is a hand-designed heuristic search. Part 2 implements a FunSearch-style loop in which a language model proposes scoring functions that are evaluated automatically.
+
+The main result is that Part 1 refutes all 100 benchmark conjectures with a total cost of 136.801705 seconds, or 1.368017 seconds on average. FunSearch also reaches 100/100 with some candidates, but it does not improve over the final hand-designed heuristic.
+
+\section{Simple Heuristic}
+
+\subsection{Validation Rule}
+
+Final validation uses only the mathematical violation. For a conjecture \(y \le f(x)\), we use
+\[
+  \text{violation}(G)=y(G)-f(x(G)).
+\]
+For a conjecture \(y \ge f(x)\), we use
+\[
+  \text{violation}(G)=f(x(G))-y(G).
+\]
+A graph is accepted only when the violation is strictly positive and the class constraints are verified after recomputing invariants. This separation matters: a heuristic score can guide search, but it never validates a false counterexample.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{ll}
+\toprule
+Module & Role \\
+\midrule
+\texttt{loader.py} & Loads the benchmark CSV \\
+\texttt{conjecture.py} & Conjecture object and exact violation formula \\
+\texttt{invariants.py} & Invariant computation using \texttt{networkx} and \texttt{numpy} \\
+\texttt{classes.py} & Tests for \texttt{connected}, \texttt{tree}, \texttt{claw\_free} \\
+\texttt{generators.py} & Initial graph families and random generation \\
+\texttt{mutations.py} & Local graph modifications \\
+\texttt{repair.py} & Repair after generation or mutation \\
+\texttt{search.py} & Selection, mutation, evaluation, and stopping logic \\
+\texttt{verify.py} & Strict verification of \texttt{graph6} counterexamples \\
+\bottomrule
+\end{tabular}
+\caption{Part 1 architecture.}
+\end{table}
+
+\subsection{Search Loop}
+
+The main search keeps a scored population. It starts from an initial population, selects promising parents, applies a local mutation or injects a fresh graph, repairs the candidate if needed, and computes only the invariants required by the current conjecture. Candidates are sorted by objective score, but the stopping condition remains strict validation.
+
+The evaluation path is intentionally robust to automatically generated scores. If a scorer raises an exception, returns \texttt{None}, or produces a non-finite value, its objective becomes \(-\infty\) and the engine continues.
+
+\begin{lstlisting}[language=Python,caption={Candidate evaluation in the search engine.}]
+def _evaluate(graph, conjecture, needed, scorer):
+    invariants = compute_cached(graph, needed)
+    try:
+        raw_objective = scorer(graph, invariants, conjecture)
+        objective = float(raw_objective) if raw_objective is not None else float("-inf")
+    except Exception:
+        objective = float("-inf")
+    if not math.isfinite(objective):
+        objective = float("-inf")
+    return objective, violation_score(graph, invariants, conjecture), invariants
+\end{lstlisting}
+
+\subsection{Evolution of \texttt{generate\_initial\_population}}
+
+The most decisive improvement in Part 1 was not score shaping alone, but changing the graph space exposed to the search engine. In v1, \texttt{generate\_initial\_population} sampled random graphs in the requested class. This explores broadly, but it misses rare extremal structures.
+
+\begin{lstlisting}[language=Python,caption={v1: repaired random population.}]
+population = []
+while len(population) < size and attempts < size * 80:
+    n = rng.randint(min_order, max_order)
+    graph = generate_graph(classes, rng, n)
+    graph = repair(graph, classes, rng)
+    if graph is not None and satisfies_classes(graph, classes):
+        population.append(_normalize_nodes(graph))
+\end{lstlisting}
+
+In v2, we added a deterministic seed phase before random sampling. The population starts with simple graphs and targeted families. This changed the behavior of the system: instead of waiting for random mutations to discover the right shape, the engine begins close to useful counterexamples.
+
+\begin{lstlisting}[language=Python,caption={v2 and later: structural seeds before randomness.}]
+for graph in seed_graphs(classes, min_order, max_order):
+    graph = repair(graph, classes, rng)
+    if graph is not None and satisfies_classes(graph, classes):
+        population.append(_normalize_nodes(graph))
+    if len(population) >= size:
+        return population
+\end{lstlisting}
+
+The first seeds were paths, cycles, cliques, and spider trees. Spiders were added because they can increase domination-style invariants without increasing matching as quickly. They are built from a center and several legs of controlled lengths.
+
+\begin{lstlisting}[language=Python,caption={Spider seeds introduced in v2.}]
+def _spider(lengths):
+    graph = nx.Graph()
+    graph.add_node(0)
+    next_node = 1
+    for length in lengths:
+        previous = 0
+        for _ in range(length):
+            graph.add_edge(previous, next_node)
+            previous = next_node
+            next_node += 1
+    return graph
+\end{lstlisting}
+
+In v3, the initial population was expanded with double-stars, damaged clique chains, sparse connected graphs, triangles with attached paths, and clique--path--clique graphs. Double-stars target cases with many leaves around few centers. Damaged clique chains keep high density and many triangles while changing maximum degree and bridge structure. Clique--path--clique graphs are useful when spectral quantities and distances react strongly to bottlenecks.
+
+\begin{lstlisting}[language=Python,caption={Example clique--path--clique seed.}]
+def _clique_path_clique(left_size, right_size, path_length):
+    left = list(range(left_size))
+    path = list(range(left_size, left_size + path_length))
+    right = list(range(left_size + path_length,
+                       left_size + path_length + right_size))
+    graph.add_edges_from((u, v) for i, u in enumerate(left)
+                         for v in left[i + 1:])
+    graph.add_edges_from((u, v) for i, u in enumerate(right)
+                         for v in right[i + 1:])
+    previous = left[0]
+    for node in path:
+        graph.add_edge(previous, node)
+        previous = node
+    graph.add_edge(previous, right[0])
+\end{lstlisting}
+
+v4 stabilized the last failures by adding branched paths and triangle tails. Branched paths remain trees but create strong local effects on independent domination, leaves, and Zagreb indices. Triangle tails preserve a near claw-free shape while controlling distance-related invariants.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{p{1.3cm}p{6.2cm}p{6cm}}
+\toprule
+Version & Initial population additions & Motivation \\
+\midrule
+v1 & Random class-aware generation: trees, paths, cycles, cliques, \texttt{G(n,p)}, dense claw-free graphs. & Build a modular baseline and verify the pipeline. \\
+v2 & Deterministic seeds, fixed-size paths/cycles/cliques, spider trees. & Start near simple extremal graph families. \\
+v3 & Double-stars, damaged cliques, sparse graphs, triangle paths, clique--path--clique. & Target domination, density, triangles, distances, and spectral effects. \\
+v4 & Branched paths and triangle tails. & Resolve final tree, claw-free, and distance/spectral cases. \\
+\bottomrule
+\end{tabular}
+\caption{Evolution of \texttt{generate\_initial\_population}.}
+\end{table}
+
+\subsection{Manual Score}
+
+The manual score starts from raw violation and adds small normalized guidance terms. The dominant coefficient remains the violation so that the search stays aligned with the mathematical objective.
+
+\begin{lstlisting}[language=Python,caption={Simplified manual score.}]
+score = 100.0 * violation
+score += 0.15 * y_value if conjecture.sign == "<=" else -0.15 * y_value
+score += 0.12 * clamp(direction_from_derivative) * x_value
+score += structural_guidance(G, invariants, conjecture)
+\end{lstlisting}
+
+The structural terms look at density, leaf ratio, triangles, and diameter. They encourage shapes consistent with the invariant that should become large or small. In practice, these terms mostly broke ties between promising candidates; the main performance jump came from graph families.
+
+\section{FunSearch Architecture}
+
+Part 2 implements a FunSearch-inspired loop. The model generates a Python scoring function named \texttt{heuristic\_score}. It is stored in \path{src/graphbench/funsearch/candidates/} and evaluated by the same engine as Part 1. Only the score changes; generators, mutations, invariants, and verification are unchanged.
+
+The cycle is:
+\begin{enumerate}
+  \item read the registry of evaluated candidates;
+  \item select the best source files;
+  \item build a prompt with these sources and their results;
+  \item call OpenRouter for a new Python function;
+  \item extract and locally validate the function;
+  \item run the evaluator and append a row to \path{results/funsearch/registry.csv}.
+\end{enumerate}
+
+We first used GPT-5.5 with low reasoning because it was expected to be strong at code and heuristic generation while staying cheaper than higher reasoning modes. For the longer 25-generation run, we switched to DeepSeek mainly for cost reasons.
+
+Commit \texttt{7527406} corresponds to the first GPT-5.5 experiment. Its registry shows six main generations: \texttt{candidate\_001} and \texttt{candidate\_002} find 29/30 on a short evaluation, \texttt{candidate\_003} finds 28/30, \texttt{candidate\_004} finds 97/100, \texttt{candidate\_005} finds 98/100, and \texttt{candidate\_006} initially finds 95/100 in one registry row. After full reevaluation in \path{candidate_006_100.csv}, \texttt{candidate\_006} is the only candidate from that series to reach 100/100.
+
+\subsection{GPT-5.5 Candidate \texttt{candidate\_006}}
+
+Candidate 006 remains close to the manual score, but it adds an interesting idea: reward graphs near the decision boundary. It multiplies violation by 50, then adds a Gaussian term that is largest when the violation is close to zero.
+
+\begin{lstlisting}[language=Python,caption={Excerpt from \texttt{candidate\_006.py}.}]
+score = 50.0 * violation
+boundary_weight = math.exp(-5.0 * violation * violation)
+diff_ratio = diff_abs / (diff_abs + n + 1.0)
+score += 3.0 * boundary_weight * diff_ratio
+\end{lstlisting}
+
+This is reasonable for local search: a graph that is almost a counterexample is often a better parent than a graph far away from the boundary. Candidate 006 also uses a polynomial derivative direction, mainly when violation is still negative.
+
+\begin{lstlisting}[language=Python,caption={Derivative guidance in \texttt{candidate\_006.py}.}]
+if sign == '<=':
+    deriv_bonus = deriv / (abs(deriv) + 1.0)
+else:
+    deriv_bonus = -deriv / (abs(deriv) + 1.0)
+if violation < 0:
+    score += 0.5 * deriv_bonus
+\end{lstlisting}
+
+It also contains weak class-specific hints. For trees it rewards leaves; for claw-free graphs it mildly penalizes large maximum degree. These choices did not beat Part 1, but they produced a stable scorer compatible with the search engine.
+
+\subsection{DeepSeek Candidate \texttt{candidate\_014}}
+
+In the 25-cycle DeepSeek sequence, \texttt{candidate\_014} is the best registry candidate. It uses almost the same structure as 006, with a sharper boundary term and an explicit penalty when the derivative direction goes against the objective.
+
+\begin{lstlisting}[language=Python,caption={Excerpt from \texttt{candidate\_014.py}.}]
+boundary_weight = math.exp(-6.0 * violation * violation)
+diff_ratio = diff_abs / (diff_abs + n + 1.0)
+score += 3.5 * boundary_weight * diff_ratio
+
+if sign == '<=':
+    direction = deriv
+else:
+    direction = -deriv
+dir_norm = direction / (abs(deriv) + 1.0)
+away_penalty = max(0.0, -dir_norm) * 0.3
+if violation < 0:
+    score += 0.5 * dir_norm - away_penalty
+\end{lstlisting}
+
+Scientifically, this candidate is coherent: it keeps violation as the main signal, encourages boundary candidates, and avoids locally bad derivative directions. Its full result is 100/100 with total cost 166.636643 seconds. It is valid, but slower than both the manual heuristic and GPT-5.5 candidate 006.
+
+\section{Experimental Results}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrrr}
+\toprule
+Method & Found & Total cost & Average time \\
+\midrule
+Part 1 hand-designed heuristic & 100/100 & 136.80 & 1.368 s \\
+FunSearch GPT-5.5 candidate 006 & 100/100 & 157.50 & 1.575 s \\
+FunSearch DeepSeek candidate 014 & 100/100 & 166.64 & 1.666 s \\
+\bottomrule
+\end{tabular}
+\caption{Final results on the 100 conjectures.}
+\end{table}
+
+Part 1 is the fastest method on the final benchmark. It has median time 0.561114 seconds and maximum time 5.347417 seconds. GPT-5.5 candidate 006 reaches 100/100 with total cost 157.502736 seconds. DeepSeek candidate 014 reaches 100/100 with total cost 166.636643 seconds and is the best candidate in the DeepSeek sequence.
+
+The fact that FunSearch reaches 100/100 matters: the architecture generates executable and valid scoring functions. However, it does not improve final runtime. The most likely explanation is that the Part 1 engine was already strongly helped by its initial graph families. When the right graph is already present in the initial population or close to it, the fine details of the score become secondary.
+
+\section{Scientific Discussion}
+
+The easiest conjectures were those with simple extremal graph families: small complete graphs for clique or average-degree cases, paths for some distance cases, spider trees for total domination versus matching, and double-stars for independent domination and vertex cover.
+
+The hardest conjectures often involved costly or sensitive invariants: distances, eigenvalues, domination, total domination, and independent domination. The spectral cases included the largest distance eigenvalue and the second-smallest Laplacian eigenvalue. Fixing \texttt{proximity} and \texttt{remoteness} was important because the benchmark uses reciprocal conventions:
+\[
+\texttt{proximity}=1/\max \overline{d}, \qquad
+\texttt{remoteness}=1/\min \overline{d}.
+\]
+Before that correction, several cases looked difficult for the wrong reason.
+
+The main lesson is that graph-family generation mattered more than score shaping. Local mutations explore well around a good form, but they are weak at discovering rare structures from scratch. By adding the right seeds, we changed the geometry of the search space: the engine starts near regions where positive violations exist.
+
+AI was useful for proposing score functions, implementing the FunSearch loop, and exploring variants. It was less decisive for identifying extremal graph families and benchmark-specific invariant conventions. Human analysis was still necessary to verify invariants, interpret failures, choose seed families, and keep strict validation.
+
+\section{Dependencies and Libraries}
+
+The solution is deliberately lightweight. The \path{requirements.txt} file contains:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{ll}
+\toprule
+Dependency & Use \\
+\midrule
+\texttt{networkx >= 3.2} & Graph representation, generators, connectivity, line graphs, graph6 \\
+\texttt{numpy >= 1.26} & Numerical computation, especially spectral invariants \\
+\bottomrule
+\end{tabular}
+\caption{Direct Python dependencies.}
+\end{table}
+
+The Python standard library is used for CSV files, paths, timing, dynamic imports of FunSearch candidates, reproducible randomness, and JSON handling. For Part 2, OpenRouter is called through a local client in the repository; the API key is not versioned. The report is written in LaTeX and compiled with \texttt{pdflatex}.
+
+\end{document}

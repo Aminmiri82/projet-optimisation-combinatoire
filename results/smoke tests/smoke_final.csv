@@ -1,0 +1,6 @@
+conjecture_id,found,elapsed_seconds,score,graph6,evaluated,classes,x,x_value,y,y_value,sign,rhs,order,size,density,minimum_degree,maximum_degree,average_degree
+886,False,1.001130,2.27373675443e-13,S~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{,1079,connected,maximum_degree,19,triangle_number,1140,<=,1139.9999999999998,20,190,1.0,19,19,19.0
+980,True,0.034197,0.625,A_,104,connected,average_degree,1.0,clique_number,2,<=,1.375,2,1,1.0,1,1,1.0
+981,True,0.024418,0.333333333333,A_,60,connected,average_degree,1.0,clique_number,2,<=,1.6666666666666667,2,1,1.0,1,1,1.0
+1177,True,0.037402,0.333333333333,A_,126,connected,clique_number,2,average_degree,1.0,>=,1.3333333333333333,2,1,1.0,1,1,1.0
+1178,True,0.016848,0.2,A_,55,connected,clique_number,2,average_degree,1.0,>=,1.2,2,1,1.0,1,1,1.0

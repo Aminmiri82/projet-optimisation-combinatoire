@@ -1,0 +1,2 @@
+conjecture_id,found,elapsed_seconds,score,graph6,evaluated,classes,x,x_value,y,y_value,sign,rhs,order,size,density,minimum_degree,maximum_degree,average_degree
+3384,True,0.628845,0.0134268601408,ZhCGGC@?G?_@?@??_?G?A??O?@??A??A??@???O??A???G?_???????g????,726,connected,remoteness,0.19402985074626863,vertex_cover_number,8,>=,8.013426860140843,27,26,0.07407407407407407,1,11,1.9259259259259258
