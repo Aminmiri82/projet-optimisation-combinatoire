@@ -4,9 +4,11 @@ __pycache__/
 .pytest_cache/
 .DS_Store
 .env
+_env
 
 # Smoke test outputs (local / CI scratch)
 results/smoke*.csv
+results/part1_results.local.csv
 
 # LaTeX build artifacts
 *.aux
