@@ -14,6 +14,7 @@
 \usepackage{fancyhdr}
 \usepackage{titlesec}
 \usepackage{graphicx}
+\usepackage{float}
 
 \definecolor{UnivAccent}{HTML}{1e3a5f}
 \definecolor{UnivMuted}{HTML}{5a6572}
@@ -43,7 +44,7 @@
   keywordstyle=\color{blue!60!black},
   commentstyle=\color{green!35!black}
 }
-\lstset{style=code}
+\lstset{style=code, float, floatplacement=H}
 
 \begin{document}
 
@@ -75,13 +76,14 @@
     Course & Combinatorial Optimization \\
     Instructor & François DELBOT \\
     Academic year & 2025--2026 \\
-    Submission date & May 7, 2026 \\
+    Submission date & May 9, 2026 \\
     Repository & \url{https://github.com/Aminmiri82/projet-optimisation-combinatoire} \\
   \end{tabular}
 
   \vspace{1.35cm}
   \begin{tabular}{@{}r@{:\quad}l@{}}
     Refuted conjectures & 100/100 \\
+    Final score (\(\sum_i c_i\)) & 136.80 \\
     Part 1 total time & 136.80 s \\
     Part 1 average time & 1.368 s \\
     FunSearch (GPT-5.5, \texttt{candidate\_006}) & 100/100 \\
@@ -108,6 +110,12 @@ The program must load conjectures, generate admissible graphs, compute the requi
 
 The main result is that Part 1 refutes all 100 benchmark conjectures with a total cost of 136.801705 seconds, or 1.368017 seconds on average. FunSearch also reaches 100/100 with some candidates, but it does not improve over the final hand-designed heuristic.
 
+\clearpage
+\begin{center}
+  {\LARGE\bfseries Part 1}
+\end{center}
+\vspace{0.6em}
+
 \section{Simple Heuristic}
 
 \subsection{Validation Rule}
@@ -122,7 +130,7 @@ For a conjecture \(y \ge f(x)\), we use
 \]
 A graph is accepted only when the violation is strictly positive and the class constraints are verified after recomputing invariants. This separation matters: a heuristic score can guide search, but it never validates a false counterexample.
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \begin{tabular}{ll}
 \toprule
@@ -148,6 +156,7 @@ The main search keeps a scored population. It starts from an initial population,
 
 The evaluation path is intentionally robust to automatically generated scores. If a scorer raises an exception, returns \texttt{None}, or produces a non-finite value, its objective becomes \(-\infty\) and the engine continues.
 
+\clearpage
 \begin{lstlisting}[language=Python,caption={Candidate evaluation in the search engine.}]
 def _evaluate(graph, conjecture, needed, scorer):
     invariants = compute_cached(graph, needed)
@@ -186,6 +195,7 @@ for graph in seed_graphs(classes, min_order, max_order):
         return population
 \end{lstlisting}
 
+\clearpage
 The first seeds were paths, cycles, cliques, and spider trees. Spiders were added because they can increase domination-style invariants without increasing matching as quickly. They are built from a center and several legs of controlled lengths.
 
 \begin{lstlisting}[language=Python,caption={Spider seeds introduced in v2.}]
@@ -223,7 +233,7 @@ def _clique_path_clique(left_size, right_size, path_length):
 
 v4 stabilized the last failures by adding branched paths and triangle tails. Branched paths remain trees but create strong local effects on independent domination, leaves, and Zagreb indices. Triangle tails preserve a near claw-free shape while controlling distance-related invariants.
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \begin{tabular}{p{1.3cm}p{6.2cm}p{6cm}}
 \toprule
@@ -250,6 +260,12 @@ score += structural_guidance(G, invariants, conjecture)
 \end{lstlisting}
 
 The structural terms look at density, leaf ratio, triangles, and diameter. They encourage shapes consistent with the invariant that should become large or small. In practice, these terms mostly broke ties between promising candidates; the main performance jump came from graph families.
+
+\clearpage
+\begin{center}
+  {\LARGE\bfseries Part 2}
+\end{center}
+\vspace{0.6em}
 
 \section{FunSearch Architecture}
 
@@ -316,7 +332,7 @@ Scientifically, this candidate is coherent: it keeps violation as the main signa
 
 \section{Experimental Results}
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \begin{tabular}{lrrr}
 \toprule
@@ -349,11 +365,30 @@ The main lesson is that graph-family generation mattered more than score shaping
 
 AI was useful for proposing score functions, implementing the FunSearch loop, and exploring variants. It was less decisive for identifying extremal graph families and benchmark-specific invariant conventions. Human analysis was still necessary to verify invariants, interpret failures, choose seed families, and keep strict validation.
 
+\subsection{Recap of the assignment questions}
+
+\begin{enumerate}
+  \item \textbf{Which conjectures are easy to refute?}\\
+  The easiest ones are those for which a simple extremal family is already present in the initial population (small cliques, paths, spider trees, double-stars). In these cases, local search quickly reaches a positive violation.
+
+  \item \textbf{Which invariants seem difficult to manipulate?}\\
+  The hardest invariants are distance-, spectral-, and domination-related ones (\texttt{largest\_distance\_eigenvalue}, \texttt{second\_smallest\_laplace\_eigenvalue}, \texttt{domination\_number}, \texttt{total\_domination\_number}, \texttt{independent\_domination\_number}), because they are sensitive to small structural changes.
+
+  \item \textbf{Which mutations are effective?}\\
+  Local mutations are effective for exploration around a good structure, but they are most effective when starting from strong structural seeds. In practice, their main role is fine optimization around already promising graphs.
+
+  \item \textbf{Does the FunSearch architecture really improve the initial heuristic?}\\
+  FunSearch improves the automation of score discovery and produces valid 100/100 candidates. However, in our final experiments, it does not beat the best Part 1 hand-designed heuristic in total runtime.
+
+  \item \textbf{Did AI produce useful ideas or only code?}\\
+  AI produced useful scoring ideas (boundary guidance, derivative terms, structural adjustments) and an operational evolution loop. Still, the largest gains mostly came from human-designed initial graph families and experimental validation.
+\end{enumerate}
+
 \section{Dependencies and Libraries}
 
 The solution is deliberately lightweight. The \path{requirements.txt} file contains:
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \begin{tabular}{ll}
 \toprule
