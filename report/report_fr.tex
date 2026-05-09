@@ -93,9 +93,9 @@
   \vspace{1.35cm}
   \begin{tabular}{@{}r@{:\quad}l@{}}
     Conjectures réfutées & 100/100 \\
-    Score final (\(\sum_i c_i\)) & 136{,}80 \\
-    Temps total Partie 1 & 136{,}80 s \\
-    Temps moyen Partie 1 & 1{,}368 s \\
+    Score final (\(\sum_i c_i\)) & 127{,}94 \\
+    Temps total Partie 1 & 127{,}94 s \\
+    Temps moyen Partie 1 & 1{,}279 s \\
     FunSearch (GPT-5{,}5, \texttt{candidate\_006}) & 100/100 \\
     FunSearch (DeepSeek, \texttt{candidate\_014}) & 100/100 \\
   \end{tabular}
@@ -118,7 +118,7 @@ Un contre-exemple est un graphe appartenant aux classes imposées par le benchma
 
 Le système doit donc charger les conjectures, générer des graphes admissibles, calculer les invariants requis, maximiser la violation, puis produire un graphe au format \texttt{graph6}. Notre solution se décompose en deux parties. La Partie 1 est une recherche heuristique conçue à la main. La Partie 2 implémente une boucle de type FunSearch où un modèle de langage propose des fonctions de score, qui sont ensuite évaluées automatiquement.
 
-Le résultat principal est le suivant : la Partie 1 atteint 100/100 contre-exemples valides avec un coût total de 136.801705 secondes, soit 1.368017 seconde en moyenne. FunSearch atteint également 100/100 avec certains candidats, mais ne dépasse pas le temps de l'heuristique manuelle finale.
+Le résultat principal est le suivant : la Partie 1 atteint 100/100 contre-exemples valides avec un coût total de 127.942360 secondes, soit 1.279424 seconde en moyenne. FunSearch atteint également 100/100 avec certains candidats, mais ne dépasse pas le temps de l'heuristique manuelle finale.
 
 \clearpage
 \begin{center}
@@ -242,6 +242,8 @@ def _clique_path_clique(left_size, right_size, path_length):
 
 La v4 a stabilisé les derniers échecs en ajoutant les chemins branchés et les queues triangulaires. Les chemins branchés gardent une structure d'arbre, mais créent localement des effets forts sur la domination indépendante, les feuilles et certains indices de Zagreb. Les queues triangulaires conservent une structure proche du sans-griffe tout en contrôlant les distances.
 
+La v5 conserve les mêmes familles de graphes que la v4, mais rend la taille de population adaptative. La taille par défaut passe à 30 candidats, ce qui réduit le coût de recherche sur la majorité des conjectures. Elle monte à 60, ou exceptionnellement 120, pour quelques couples d'invariants sensibles comme \path{second_zagreb_index}/\path{independent_domination_number}, \path{largest_distance_eigenvalue}/\texttt{proximity}, \path{average_degree}/\path{clique_number}, \path{clique_number}/\path{minimum_degree}, \texttt{radius}/\texttt{remoteness} et \texttt{density}/\texttt{proximity}. Cette v5 garde 100/100 contre-exemples valides et réduit le coût total mesuré de 136.801705 secondes à 127.942360 secondes.
+
 \begin{table}[H]
 \centering
 \begin{tabular}{p{1.3cm}p{6.2cm}p{6cm}}
@@ -252,6 +254,7 @@ v1 & Génération aléatoire par classe : arbres, chemins, cycles, cliques, \tex
 v2 & Graines déterministes, chemins/cycles/cliques de tailles fixes, araignées. & Donner au moteur des graphes extrémaux simples dès le début. \\
 v3 & Doubles étoiles, cliques endommagées, graphes clairsemés, triangles avec chemins, clique--chemin--clique. & Cibler domination, densité, triangles, distances et effets spectraux. \\
 v4 & Chemins branchés et queues triangulaires. & Résoudre les derniers cas d'arbres, de graphes sans griffe et de distances spectrales. \\
+v5 & Taille de population adaptative : 30 par défaut, 60 ou 120 pour quelques couples sensibles. & Accélérer la recherche tout en conservant la validation stricte 100/100. \\
 \bottomrule
 \end{tabular}
 \caption{Évolution de \texttt{generate\_initial\_population}.}
@@ -347,7 +350,7 @@ Scientifiquement, ce candidat est cohérent : il conserve la violation comme sig
 \toprule
 Méthode & Trouvé & Coût total & Temps moyen \\
 \midrule
-Heuristique manuelle Partie 1 & 100/100 & 136.80 & 1.368 s \\
+Heuristique manuelle Partie 1 v5 & 100/100 & 127.94 & 1.279 s \\
 FunSearch GPT-5.5, candidat 006 & 100/100 & 157.50 & 1.575 s \\
 FunSearch DeepSeek, candidat 014 & 100/100 & 166.64 & 1.666 s \\
 \bottomrule
@@ -355,7 +358,7 @@ FunSearch DeepSeek, candidat 014 & 100/100 & 166.64 & 1.666 s \\
 \caption{Résultats finaux sur les 100 conjectures.}
 \end{table}
 
-La Partie 1 est la meilleure en temps moyen. Elle obtient une médiane de 0.561114 seconde et un maximum de 5.347417 secondes. Le candidat GPT-5.5 006 atteint 100/100 avec un coût total de 157.502736 secondes. Le candidat DeepSeek 014 atteint 100/100 avec un coût total de 166.636643 secondes et constitue le meilleur candidat de la séquence DeepSeek.
+La Partie 1 est la meilleure en temps moyen. Elle obtient une médiane de 0.722312 seconde et un maximum de 12.134498 secondes. Le candidat GPT-5.5 006 atteint 100/100 avec un coût total de 157.502736 secondes. Le candidat DeepSeek 014 atteint 100/100 avec un coût total de 166.636643 secondes et constitue le meilleur candidat de la séquence DeepSeek.
 
 Le fait que FunSearch atteigne 100/100 est important : l'architecture produit des fonctions exécutables et valides. En revanche, elle n'améliore pas le temps final. L'explication la plus probable est que le moteur de Partie 1 était déjà très fortement aidé par ses familles initiales. Lorsque le bon graphe est déjà présent dans la population initiale ou proche d'elle, la qualité fine du score devient secondaire.
 

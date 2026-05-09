@@ -11,6 +11,8 @@ violation(G) = f(x(G)) - y(G)   for y >= f(x)
 
 A graph is accepted only when the strict violation is positive and the required graph classes are satisfied.
 
+By default, Part 1 uses the v5 adaptive population policy: 30 candidates for most conjectures, 60 or 120 for a few sensitive invariant pairs that need a larger pool.
+
 During search, candidates are ranked with a small hand-written guidance score in `scoring.py`.
 The guidance score is only used to choose promising parents when the raw violation is still
 negative or tied. The final decision still uses the strict violation formula above.
@@ -77,6 +79,9 @@ Manual CLI:
 
 ```bash
 PYTHONPATH=src python3 -m graphbench --time-limit 60 --output results/part1_results.csv
+
+# Reproduce the old fixed-size behavior used before v5:
+POPULATION_SIZE=120 ./run.sh part1
 ```
 
 ## Run Part 2 (FunSearch)
@@ -158,8 +163,10 @@ PYTHONPATH=src python3 -m graphbench.verify_results --input results/part1_result
 
 ## Where Results Are
 
-- Part 1 default output: `results/part1_results.csv`
-- Additional Part 1 experiments: `results/` (e.g., `results/v4`, `results/iterations`)
+- Part 1 default output: `results/part1_results.csv` (current v5 adaptive run)
+- Archived v4 final Part 1 CSVs: `results/v4/`
+- Archived v4 iteration checks: `results/iterations v4/`
+- Additional Part 1 experiments: `results/` (e.g., `results/iterations`, `results/iterations v3`)
 - FunSearch runs and candidate summaries: `results/funsearch/`
 - Dashboard files: `results_dashboard/`
 - Final reports: `report/report_fr.pdf`, `report/report_en.pdf`
@@ -182,6 +189,6 @@ This runs: smoke test, Part 1 benchmark, verification, and FunSearch baseline ev
 - `mutations.py`: local graph mutations.
 - `repair.py`: repair after mutation.
 - `scoring.py`: Part 1 raw violation score.
-- `search.py`: population search loop.
+- `search.py`: population search loop and v5 adaptive population-size policy.
 - `runner.py`: CLI and benchmark result writing.
 - `verify_results.py`: CLI verification for result CSV files.

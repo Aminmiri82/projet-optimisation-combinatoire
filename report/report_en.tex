@@ -93,9 +93,9 @@
   \vspace{1.35cm}
   \begin{tabular}{@{}r@{:\quad}l@{}}
     Refuted conjectures & 100/100 \\
-    Final score (\(\sum_i c_i\)) & 136.80 \\
-    Part 1 total time & 136.80 s \\
-    Part 1 average time & 1.368 s \\
+    Final score (\(\sum_i c_i\)) & 127.94 \\
+    Part 1 total time & 127.94 s \\
+    Part 1 average time & 1.279 s \\
     FunSearch (GPT-5.5, \texttt{candidate\_006}) & 100/100 \\
     FunSearch (DeepSeek, \texttt{candidate\_014}) & 100/100 \\
   \end{tabular}
@@ -118,7 +118,7 @@ A counterexample is a graph in the required benchmark class for which the inequa
 
 The program must load conjectures, generate admissible graphs, compute the required invariants, maximize the violation, and output a graph in \texttt{graph6} format. Our solution has two parts. Part 1 is a hand-designed heuristic search. Part 2 implements a FunSearch-style loop in which a language model proposes scoring functions that are evaluated automatically.
 
-The main result is that Part 1 refutes all 100 benchmark conjectures with a total cost of 136.801705 seconds, or 1.368017 seconds on average. FunSearch also reaches 100/100 with some candidates, but it does not improve over the final hand-designed heuristic.
+The main result is that Part 1 refutes all 100 benchmark conjectures with a total cost of 127.942360 seconds, or 1.279424 seconds on average. FunSearch also reaches 100/100 with some candidates, but it does not improve over the final hand-designed heuristic.
 
 \clearpage
 \begin{center}
@@ -242,6 +242,8 @@ def _clique_path_clique(left_size, right_size, path_length):
 
 v4 stabilized the last failures by adding branched paths and triangle tails. Branched paths remain trees but create strong local effects on independent domination, leaves, and Zagreb indices. Triangle tails preserve a near claw-free shape while controlling distance-related invariants.
 
+v5 keeps the same graph families as v4, but makes the population size adaptive. The default size becomes 30 candidates, which reduces search overhead for most conjectures. It rises to 60, or exceptionally 120, for a few sensitive invariant pairs such as \path{second_zagreb_index}/\path{independent_domination_number}, \path{largest_distance_eigenvalue}/\texttt{proximity}, \path{average_degree}/\path{clique_number}, \path{clique_number}/\path{minimum_degree}, \texttt{radius}/\texttt{remoteness}, and \texttt{density}/\texttt{proximity}. This v5 keeps 100/100 valid counterexamples and reduces the measured total cost from 136.801705 seconds to 127.942360 seconds.
+
 \begin{table}[H]
 \centering
 \begin{tabular}{p{1.3cm}p{6.2cm}p{6cm}}
@@ -252,6 +254,7 @@ v1 & Random class-aware generation: trees, paths, cycles, cliques, \texttt{G(n,p
 v2 & Deterministic seeds, fixed-size paths/cycles/cliques, spider trees. & Start near simple extremal graph families. \\
 v3 & Double-stars, damaged cliques, sparse graphs, triangle paths, clique--path--clique. & Target domination, density, triangles, distances, and spectral effects. \\
 v4 & Branched paths and triangle tails. & Resolve final tree, claw-free, and distance/spectral cases. \\
+v5 & Adaptive population size: 30 by default, 60 or 120 for a few sensitive pairs. & Speed up search while preserving strict 100/100 validation. \\
 \bottomrule
 \end{tabular}
 \caption{Evolution of \texttt{generate\_initial\_population}.}
@@ -347,7 +350,7 @@ Scientifically, this candidate is coherent: it keeps violation as the main signa
 \toprule
 Method & Found & Total cost & Average time \\
 \midrule
-Part 1 hand-designed heuristic & 100/100 & 136.80 & 1.368 s \\
+Part 1 hand-designed heuristic v5 & 100/100 & 127.94 & 1.279 s \\
 FunSearch GPT-5.5 candidate 006 & 100/100 & 157.50 & 1.575 s \\
 FunSearch DeepSeek candidate 014 & 100/100 & 166.64 & 1.666 s \\
 \bottomrule
@@ -355,7 +358,7 @@ FunSearch DeepSeek candidate 014 & 100/100 & 166.64 & 1.666 s \\
 \caption{Final results on the 100 conjectures.}
 \end{table}
 
-Part 1 is the fastest method on the final benchmark. It has median time 0.561114 seconds and maximum time 5.347417 seconds. GPT-5.5 candidate 006 reaches 100/100 with total cost 157.502736 seconds. DeepSeek candidate 014 reaches 100/100 with total cost 166.636643 seconds and is the best candidate in the DeepSeek sequence.
+Part 1 is the fastest method on the final benchmark. It has median time 0.722312 seconds and maximum time 12.134498 seconds. GPT-5.5 candidate 006 reaches 100/100 with total cost 157.502736 seconds. DeepSeek candidate 014 reaches 100/100 with total cost 166.636643 seconds and is the best candidate in the DeepSeek sequence.
 
 The fact that FunSearch reaches 100/100 matters: the architecture generates executable and valid scoring functions. However, it does not improve final runtime. The most likely explanation is that the Part 1 engine was already strongly helped by its initial graph families. When the right graph is already present in the initial population or close to it, the fine details of the score become secondary.
 
