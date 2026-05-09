@@ -361,37 +361,20 @@ The fact that FunSearch reaches 100/100 matters: the architecture generates exec
 
 \section{Scientific Discussion}
 
-The easiest conjectures were those with simple extremal graph families: small complete graphs for clique or average-degree cases, paths for some distance cases, spider trees for total domination versus matching, and double-stars for independent domination and vertex cover.
+\textbf{The easiest conjectures} were those with simple extremal graph families: small complete graphs for clique or average-degree cases, paths for some distance cases, spider trees for total domination versus matching, and double-stars for independent domination and vertex cover.
 
-The hardest conjectures often involved costly or sensitive invariants: distances, eigenvalues, domination, total domination, and independent domination. The spectral cases included the largest distance eigenvalue and the second-smallest Laplacian eigenvalue. Fixing \texttt{proximity} and \texttt{remoteness} was important because the benchmark uses reciprocal conventions:
+\textbf{The hardest conjectures} often involved costly or sensitive invariants: distances, eigenvalues, domination, total domination, and independent domination. The spectral cases included the largest distance eigenvalue and the second-smallest Laplacian eigenvalue. Fixing \texttt{proximity} and \texttt{remoteness} was important because the benchmark uses reciprocal conventions:
 \[
 \texttt{proximity}=1/\max \overline{d}, \qquad
 \texttt{remoteness}=1/\min \overline{d}.
 \]
-Before that correction, several cases looked difficult for the wrong reason.
+Before that correction, several cases looked difficult for the wrong reason. More precisely, the most sensitive invariants include \path{largest_distance_eigenvalue}, \path{second_smallest_laplace_eigenvalue}, \path{domination_number}, \path{total_domination_number}, and \path{independent_domination_number}.
 
-The main lesson is that graph-family generation mattered more than score shaping. Local mutations explore well around a good form, but they are weak at discovering rare structures from scratch. By adding the right seeds, we changed the geometry of the search space: the engine starts near regions where positive violations exist.
+The main lesson is that graph-family generation mattered more than score shaping. \textbf{Local mutations} explore well around a good form, but they are weak at discovering rare structures from scratch. By adding the right seeds, we changed the geometry of the search space: the engine starts near regions where positive violations exist.
 
-AI was useful for proposing score functions, implementing the FunSearch loop, and exploring variants. It was less decisive for identifying extremal graph families and benchmark-specific invariant conventions. Human analysis was still necessary to verify invariants, interpret failures, choose seed families, and keep strict validation.
+\textbf{FunSearch reaches 100/100}, which confirms that the architecture can generate valid executable scoring functions. However, in our final experiments it does not beat the best Part 1 hand-designed heuristic in total runtime.
 
-\subsection{Recap of the assignment questions}
-
-\begin{enumerate}
-  \item \textbf{Which conjectures are easy to refute?}\\
-  The easiest ones are those for which a simple extremal family is already present in the initial population (small cliques, paths, spider trees, double-stars). In these cases, local search quickly reaches a positive violation.
-
-  \item \textbf{Which invariants seem difficult to manipulate?}\\
-  The hardest invariants are distance-, spectral-, and domination-related ones (\texttt{largest\_distance\_eigenvalue}, \texttt{second\_smallest\_laplace\_eigenvalue}, \texttt{domination\_number}, \texttt{total\_domination\_number}, \texttt{independent\_domination\_number}), because they are sensitive to small structural changes.
-
-  \item \textbf{Which mutations are effective?}\\
-  Local mutations are effective for exploration around a good structure, but they are most effective when starting from strong structural seeds. In practice, their main role is fine optimization around already promising graphs.
-
-  \item \textbf{Does the FunSearch architecture really improve the initial heuristic?}\\
-  FunSearch improves the automation of score discovery and produces valid 100/100 candidates. However, in our final experiments, it does not beat the best Part 1 hand-designed heuristic in total runtime.
-
-  \item \textbf{Did AI produce useful ideas or only code?}\\
-  AI produced useful scoring ideas (boundary guidance, derivative terms, structural adjustments) and an operational evolution loop. Still, the largest gains mostly came from human-designed initial graph families and experimental validation.
-\end{enumerate}
+\textbf{AI was useful} for proposing score functions, implementing the FunSearch loop, and exploring variants. It was less decisive for identifying extremal graph families and benchmark-specific invariant conventions. Human analysis was still necessary to verify invariants, interpret failures, choose seed families, and keep strict validation.
 
 \section{Dependencies and Libraries}
 

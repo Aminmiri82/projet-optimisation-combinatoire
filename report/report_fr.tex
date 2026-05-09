@@ -361,37 +361,18 @@ Le fait que FunSearch atteigne 100/100 est important : l'architecture produit de
 
 \section{Discussion scientifique}
 
-Les conjectures faciles étaient celles pour lesquelles une famille extrémale simple existait : petits graphes complets pour certains cas de clique ou de degré moyen, chemins pour certains cas de distance, araignées pour domination totale contre couplage, doubles étoiles pour domination indépendante et couverture.
+\textbf{Les conjectures faciles} étaient celles pour lesquelles une famille extrémale simple existait : petits graphes complets pour certains cas de clique ou de degré moyen, chemins pour certains cas de distance, araignées pour domination totale contre couplage, doubles étoiles pour domination indépendante et couverture.
 
-Les conjectures difficiles combinaient souvent des invariants coûteux ou sensibles : distance, valeurs propres, domination, domination totale et domination indépendante. Les cas spectraux incluaient notamment la plus grande valeur propre de distance et la deuxième plus petite valeur propre du Laplacien. La correction de \texttt{proximity} et \texttt{remoteness} a été un point clé : le benchmark utilise les conventions réciproques
+\textbf{Les conjectures difficiles} combinaient souvent des invariants coûteux ou sensibles : distance, valeurs propres, domination, domination totale et domination indépendante. Les cas spectraux incluaient notamment la plus grande valeur propre de distance et la deuxième plus petite valeur propre du Laplacien. La correction de \texttt{proximity} et \texttt{remoteness} a été un point clé : le benchmark utilise les conventions réciproques
 \[
 \texttt{proximity}=1/\max \overline{d}, \qquad
 \texttt{remoteness}=1/\min \overline{d}.
 \]
 Avant cette correction, plusieurs cas semblaient difficiles pour de mauvaises raisons.
 
-L'enseignement principal est que la génération de familles de graphes a compté davantage que le façonnage du score. Les mutations locales explorent efficacement autour d'une bonne forme, mais elles découvrent mal certaines structures rares. En ajoutant les bonnes graines, on change la topologie de l'espace de recherche : le moteur commence près des régions où la violation positive existe.
+L'enseignement principal est que la génération de familles de graphes a compté davantage que le façonnage du score. \textbf{Les mutations locales} explorent efficacement autour d'une bonne forme, mais elles découvrent mal certaines structures rares. En ajoutant les bonnes graines, on change la topologie de l'espace de recherche : le moteur commence près des régions où la violation positive existe.
 
-L'IA a été utile pour proposer des fonctions de score, mettre en place la boucle FunSearch et explorer des variantes. Elle a été moins décisive pour identifier les familles extrémales et pour comprendre les conventions spécifiques du benchmark. L'intervention humaine est restée nécessaire pour vérifier les invariants, interpréter les échecs, choisir les graines et maintenir une validation stricte.
-
-\subsection{Récapitulatif des questions du sujet}
-
-\begin{enumerate}
-  \item \textbf{Quelles conjectures sont faciles à réfuter ?}\\
-  Les plus faciles sont celles pour lesquelles une famille extrémale simple existe déjà dans la population initiale (petites cliques, chemins, araignées, doubles étoiles). Dans ces cas, la recherche locale trouve rapidement une violation positive.
-
-  \item \textbf{Quels invariants semblent difficiles à manipuler ?}\\
-  Les invariants les plus difficiles sont ceux liés aux distances, au spectral et à la domination (\texttt{largest\_distance\_eigenvalue}, \texttt{second\_smallest\_laplace\_eigenvalue}, \texttt{domination\_number}, \texttt{total\_domination\_number}, \texttt{independent\_domination\_number}), car ils sont sensibles à de petites modifications structurelles.
-
-  \item \textbf{Quelles mutations sont efficaces ?}\\
-  Les mutations locales sont efficaces pour explorer autour d'une bonne forme, mais elles sont surtout performantes quand elles partent de graines structurelles pertinentes. En pratique, leur rôle principal est l'optimisation fine autour de graphes déjà prometteurs.
-
-  \item \textbf{L'architecture FunSearch améliore-t-elle réellement l'heuristique initiale ?}\\
-  FunSearch améliore l'automatisation de la recherche de scores et produit des candidats valides atteignant 100/100. En revanche, dans nos expériences finales, elle n'améliore pas le temps total par rapport à la meilleure heuristique manuelle de la Partie 1.
-
-  \item \textbf{L'IA a-t-elle produit des idées utiles ou seulement du code ?}\\
-  L'IA a produit des idées utiles de scoring (guidage proche de la frontière, termes dérivés, ajustements structurels) et une boucle d'évolution exploitable. Cependant, les gains majeurs viennent surtout de la conception humaine des familles initiales et de la validation expérimentale.
-\end{enumerate}
+\textbf{L'IA a été utile} pour proposer des fonctions de score, mettre en place la boucle FunSearch et explorer des variantes. Elle a été moins décisive pour identifier les familles extrémales et pour comprendre les conventions spécifiques du benchmark. L'intervention humaine est restée nécessaire pour vérifier les invariants, interpréter les échecs, choisir les graines et maintenir une validation stricte.
 
 \section{Dépendances et bibliothèques}
 
