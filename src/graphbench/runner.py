@@ -69,7 +69,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--benchmark", type=Path, default=Path("benchmark/benchmark.csv"))
     parser.add_argument("--output", type=Path, default=Path("results/part1_results.csv"))
     parser.add_argument("--time-limit", type=float, default=60.0)
-    parser.add_argument("--population-size", type=int, default=120)
+    parser.add_argument("--population-size", type=int, default=0, help="Population size; 0 enables the v5 adaptive policy.")
     parser.add_argument("--min-order", type=int, default=2)
     parser.add_argument("--max-order", type=int, default=48)
     parser.add_argument("--seed", type=int, default=0)

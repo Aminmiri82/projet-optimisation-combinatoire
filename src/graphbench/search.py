@@ -20,7 +20,7 @@ from .scoring import heuristic_score, violation_score
 @dataclass
 class SearchConfig:
     time_limit: float = 60.0
-    population_size: int = 120
+    population_size: int = 0
     min_order: int = 2
     max_order: int = 48
     seed: int = 0
@@ -44,11 +44,12 @@ def search_counterexample(conjecture: Conjecture, config: SearchConfig) -> Searc
     start = time.monotonic()
     needed = set(conjecture.required_invariants)
     max_order = _effective_max_order(config.max_order, needed)
+    population_size = _effective_population_size(conjecture, config.population_size)
 
     population = generate_initial_population(
         conjecture.subgroup,
         rng,
-        config.population_size,
+        population_size,
         config.min_order,
         max_order,
     )
@@ -100,12 +101,12 @@ def search_counterexample(conjecture: Conjecture, config: SearchConfig) -> Searc
 
         scored.append((objective, score, candidate, invariants))
         scored.sort(key=lambda item: item[0], reverse=True)
-        if len(scored) > config.population_size:
-            keep_elite = int(config.population_size * 0.75)
+        if len(scored) > population_size:
+            keep_elite = int(population_size * 0.75)
             elite = scored[:keep_elite]
             tail = scored[keep_elite:]
             rng.shuffle(tail)
-            scored = elite + tail[: config.population_size - keep_elite]
+            scored = elite + tail[: population_size - keep_elite]
 
     return _result(conjecture, False, start, best_score, best_graph, best_invariants, evaluated)
 
@@ -122,6 +123,28 @@ def _effective_max_order(configured_max_order: int, needed: set[str]) -> int:
     if needed & exact_expensive:
         return min(configured_max_order, 28)
     return configured_max_order
+
+
+def _effective_population_size(conjecture: Conjecture, configured_population_size: int) -> int:
+    if configured_population_size > 0:
+        return configured_population_size
+
+    needed = set(conjecture.required_invariants)
+    high_population_pairs = (
+        {"density", "proximity"},
+    )
+    medium_population_pairs = (
+        {"second_zagreb_index", "independent_domination_number"},
+        {"largest_distance_eigenvalue", "proximity"},
+        {"average_degree", "clique_number"},
+        {"clique_number", "minimum_degree"},
+        {"radius", "remoteness"},
+    )
+    if any(pair <= needed for pair in high_population_pairs):
+        return 120
+    if any(pair <= needed for pair in medium_population_pairs):
+        return 60
+    return 30
 
 
 def _evaluate(

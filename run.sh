@@ -24,6 +24,7 @@ Environment overrides:
   OUTPUT=<csv path>           (default: results/part1_results.csv)
   LIMIT=<int>                 (optional limit for part1)
   SEED=<int>                  (default: 0)
+  POPULATION_SIZE=<int>       (default: 0, adaptive v5; use 120 for v4-style fixed size)
 EOF
 }
 
@@ -40,17 +41,20 @@ run_part1() {
   local time_limit="${TIME_LIMIT:-60}"
   local output="${OUTPUT:-results/part1_results.csv}"
   local seed="${SEED:-0}"
+  local population_size="${POPULATION_SIZE:-0}"
   local extra=()
   if [[ -n "${LIMIT:-}" ]]; then
     extra+=(--limit "$LIMIT")
   fi
-  echo "[part1] running benchmark with time-limit=${time_limit}s output=${output}"
+  echo "[part1] running benchmark with time-limit=${time_limit}s population-size=${population_size} output=${output}"
   PYTHONPATH=src "$PYTHON_BIN" -m graphbench \
     --time-limit "$time_limit" \
     --output "$output" \
     --seed "$seed" \
+    --population-size "$population_size" \
     "${extra[@]}"
 }
+
 
 run_smoke() {
   local time_limit="${TIME_LIMIT:-2}"
