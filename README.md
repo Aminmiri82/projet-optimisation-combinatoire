@@ -108,8 +108,7 @@ To generate a new candidate with OpenRouter, set:
 
 ```bash
 export OPENROUTER_API_KEY="your-key"
-export OPENROUTER_MODEL="openai/gpt-5.5"
-export OPENROUTER_REASONING_EFFORT="low"
+export OPENROUTER_MODEL="deepseek/deepseek-v4-flash"
 ```
 
 Then run:

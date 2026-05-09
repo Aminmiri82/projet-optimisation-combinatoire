@@ -14,6 +14,7 @@
 \usepackage{fancyhdr}
 \usepackage{titlesec}
 \usepackage{graphicx}
+\graphicspath{{./}{report/}}
 \usepackage{float}
 \usepackage{needspace}
 
@@ -93,11 +94,11 @@
   \vspace{1.35cm}
   \begin{tabular}{@{}r@{:\quad}l@{}}
     Conjectures réfutées & 100/100 \\
-    Score final (\(\sum_i c_i\)) & 127{,}94 \\
-    Temps total Partie 1 & 127{,}94 s \\
-    Temps moyen Partie 1 & 1{,}279 s \\
-    FunSearch (GPT-5{,}5, \texttt{candidate\_006}) & 100/100 \\
-    FunSearch (DeepSeek, \texttt{candidate\_014}) & 100/100 \\
+    Score final (\(\sum_i c_i\)) & 26{,}34 \\
+    Temps total Partie 1 & 26{,}34 s \\
+    Temps moyen Partie 1 & 0{,}263 s \\
+    FunSearch (GPT-5{,}5, \texttt{candidate\_006}) & 100/100, 129{,}95 s \\
+    FunSearch (DeepSeek, \texttt{candidate\_014}) & 100/100, 126{,}41 s \\
   \end{tabular}
 
   \vfill
@@ -118,7 +119,7 @@ Un contre-exemple est un graphe appartenant aux classes imposées par le benchma
 
 Le système doit donc charger les conjectures, générer des graphes admissibles, calculer les invariants requis, maximiser la violation, puis produire un graphe au format \texttt{graph6}. Notre solution se décompose en deux parties. La Partie 1 est une recherche heuristique conçue à la main. La Partie 2 implémente une boucle de type FunSearch où un modèle de langage propose des fonctions de score, qui sont ensuite évaluées automatiquement.
 
-Le résultat principal est le suivant : la Partie 1 atteint 100/100 contre-exemples valides avec un coût total de 127.942360 secondes, soit 1.279424 seconde en moyenne. FunSearch atteint également 100/100 avec certains candidats, mais ne dépasse pas le temps de l'heuristique manuelle finale.
+Le résultat principal est le suivant : la Partie 1 atteint 100/100 contre-exemples valides avec un coût total de 26.338137 secondes, soit 0.263381 seconde en moyenne, sur le dernier run local v5. FunSearch atteint également 100/100 avec certains candidats, mais ne dépasse pas le temps de l'heuristique manuelle finale.
 
 \clearpage
 \begin{center}
@@ -242,7 +243,7 @@ def _clique_path_clique(left_size, right_size, path_length):
 
 La v4 a stabilisé les derniers échecs en ajoutant les chemins branchés et les queues triangulaires. Les chemins branchés gardent une structure d'arbre, mais créent localement des effets forts sur la domination indépendante, les feuilles et certains indices de Zagreb. Les queues triangulaires conservent une structure proche du sans-griffe tout en contrôlant les distances.
 
-La v5 conserve les mêmes familles de graphes que la v4, mais rend la taille de population adaptative. La taille par défaut passe à 30 candidats, ce qui réduit le coût de recherche sur la majorité des conjectures. Elle monte à 60, ou exceptionnellement 120, pour quelques couples d'invariants sensibles comme \path{second_zagreb_index}/\path{independent_domination_number}, \path{largest_distance_eigenvalue}/\texttt{proximity}, \path{average_degree}/\path{clique_number}, \path{clique_number}/\path{minimum_degree}, \texttt{radius}/\texttt{remoteness} et \texttt{density}/\texttt{proximity}. Cette v5 garde 100/100 contre-exemples valides et réduit le coût total mesuré de 136.801705 secondes à 127.942360 secondes.
+La v5 conserve les mêmes familles de graphes que la v4, mais rend la taille de population adaptative. La taille par défaut passe à 30 candidats, ce qui réduit le coût de recherche sur la majorité des conjectures. Elle monte à 60, ou exceptionnellement 120, pour quelques couples d'invariants sensibles comme \path{second_zagreb_index}/\path{independent_domination_number}, \path{largest_distance_eigenvalue}/\texttt{proximity}, \path{average_degree}/\path{clique_number}, \path{clique_number}/\path{minimum_degree}, \texttt{radius}/\texttt{remoteness} et \texttt{density}/\texttt{proximity}. Cette v5 garde 100/100 contre-exemples valides et réduit le coût total mesuré de 136.801705 secondes en v4 à 26.338137 secondes.
 
 \begin{table}[H]
 \centering
@@ -295,7 +296,7 @@ Le cycle est le suivant :
 
 Nous avons d'abord utilisé GPT-5.5 avec raisonnement faible, car il était attendu comme fort pour la génération de code et d'heuristiques, tout en gardant un coût inférieur aux modes de raisonnement plus élevés. Ensuite, pour une séquence plus longue de 25 générations, nous sommes passés à DeepSeek pour des raisons de coût.
 
-Le commit \texttt{7527406} correspond à l'expérience GPT-5.5 initiale. Son registre montre six générations principales : \texttt{candidate\_001} et \texttt{candidate\_002} trouvent 29/30 sur une évaluation courte, \texttt{candidate\_003} trouve 28/30, \texttt{candidate\_004} trouve 97/100, \texttt{candidate\_005} trouve 98/100, et \texttt{candidate\_006} ne trouve d'abord que 95/100 dans une ligne du registre. Après réévaluation complète dans \path{candidate_006_100.csv}, \texttt{candidate\_006} est le seul candidat de cette série à atteindre 100/100.
+Le commit \texttt{7527406} correspond à l'expérience GPT-5.5 initiale. Son registre montre six générations principales : \texttt{candidate\_001} et \texttt{candidate\_002} trouvent 29/30 sur une évaluation courte, \texttt{candidate\_003} trouve 28/30, \texttt{candidate\_004} trouve 97/100, \texttt{candidate\_005} trouve 98/100, et \texttt{candidate\_006} ne trouve d'abord que 95/100 dans une ligne du registre. Après réévaluation complète dans \path{candidate_006-gpt5.5_100.csv}, \texttt{candidate\_006} est le seul candidat de cette série à atteindre 100/100.
 
 \subsection{Analyse du candidat GPT-5.5 \texttt{candidate\_006}}
 
@@ -340,7 +341,7 @@ if violation < 0:
     score += 0.5 * dir_norm - away_penalty
 \end{lstlisting}
 
-Scientifiquement, ce candidat est cohérent : il conserve la violation comme signal principal, encourage les points proches de la frontière et évite certaines directions localement défavorables. Son résultat complet est 100/100, avec un coût total de 166.636643 secondes. Il est donc valide mais plus lent que l'heuristique manuelle et que le candidat GPT-5.5 006.
+Scientifiquement, ce candidat est cohérent : il conserve la violation comme signal principal, encourage les points proches de la frontière et évite certaines directions localement défavorables. Son résultat complet en v5 est 100/100, avec un coût total de 126.412765 secondes. Il est donc valide et légèrement plus rapide que le candidat GPT-5.5 006, mais reste plus lent que l'heuristique manuelle Partie 1 v5.
 
 \section{Résultats expérimentaux}
 
@@ -350,15 +351,16 @@ Scientifiquement, ce candidat est cohérent : il conserve la violation comme sig
 \toprule
 Méthode & Trouvé & Coût total & Temps moyen \\
 \midrule
-Heuristique manuelle Partie 1 v5 & 100/100 & 127.94 & 1.279 s \\
-FunSearch GPT-5.5, candidat 006 & 100/100 & 157.50 & 1.575 s \\
-FunSearch DeepSeek, candidat 014 & 100/100 & 166.64 & 1.666 s \\
+Heuristique manuelle Partie 1 v5 & 100/100 & 26.34 & 0.263 s \\
+Heuristique manuelle Partie 1 v4 & 100/100 & 136.80 & 1.368 s \\
+FunSearch DeepSeek, candidat 014 & 100/100 & 126.41 & 1.264 s \\
+FunSearch GPT-5.5, candidat 006 & 100/100 & 129.95 & 1.300 s \\
 \bottomrule
 \end{tabular}
 \caption{Résultats finaux sur les 100 conjectures.}
 \end{table}
 
-La Partie 1 est la meilleure en temps moyen. Elle obtient une médiane de 0.722312 seconde et un maximum de 12.134498 secondes. Le candidat GPT-5.5 006 atteint 100/100 avec un coût total de 157.502736 secondes. Le candidat DeepSeek 014 atteint 100/100 avec un coût total de 166.636643 secondes et constitue le meilleur candidat de la séquence DeepSeek.
+La Partie 1 v5 est la meilleure en temps moyen. Elle obtient une médiane de 0.201430 seconde, un maximum de 1.624331 seconde et un score moyen de 2.877544. Le candidat GPT-5.5 006 atteint 100/100 avec un coût total de 129.953159 secondes. Le candidat DeepSeek 014 atteint 100/100 avec un coût total de 126.412765 secondes et constitue le meilleur candidat de la séquence DeepSeek.
 
 Le fait que FunSearch atteigne 100/100 est important : l'architecture produit des fonctions exécutables et valides. En revanche, elle n'améliore pas le temps final. L'explication la plus probable est que le moteur de Partie 1 était déjà très fortement aidé par ses familles initiales. Lorsque le bon graphe est déjà présent dans la population initiale ou proche d'elle, la qualité fine du score devient secondaire.
 

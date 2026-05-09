@@ -91,7 +91,16 @@ def main(argv: list[str] | None = None) -> None:
     )
     rows = run_benchmark(args.benchmark, args.output, config, args.limit, args.only_id)
     found = sum(1 for row in rows if row["found"])
-    print(f"found {found}/{len(rows)}; wrote {args.output}")
+    print(f"found {found}/{len(rows)}; wrote {args.output}", flush=True)
+    if rows:
+        total_time = sum(float(row["elapsed_seconds"]) for row in rows)
+        avg_time = total_time / len(rows)
+        mean_score = sum(float(row["score"]) for row in rows) / len(rows)
+        print(
+            f"summary: total_time={total_time:.2f}s avg_time_per_conjecture={avg_time:.2f}s "
+            f"mean_best_score={mean_score:.6g}",
+            flush=True,
+        )
 
 
 if __name__ == "__main__":

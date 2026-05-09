@@ -47,12 +47,13 @@ run_part1() {
     extra+=(--limit "$LIMIT")
   fi
   echo "[part1] running benchmark with time-limit=${time_limit}s population-size=${population_size} output=${output}"
+  # Bash 3.2 (macOS) + set -u: "${extra[@]}" errors when the array is empty.
   PYTHONPATH=src "$PYTHON_BIN" -m graphbench \
     --time-limit "$time_limit" \
     --output "$output" \
     --seed "$seed" \
     --population-size "$population_size" \
-    "${extra[@]}"
+    "${extra[@]+"${extra[@]}"}"
 }
 
 

@@ -286,6 +286,32 @@
 
   <main class="wrap">
     <section id="panel-part1" class="panel-section">
+      <p class="intro-part2">
+        Part 1 now includes both the original v4 benchmark from this machine and the newer v5 run.
+        v5 is shown by default because it is the current best local result.
+      </p>
+
+      <table class="compare" aria-label="Part 1 versions comparison">
+        <thead>
+          <tr>
+            <th>Version</th>
+            <th>Solved</th>
+            <th>Total time</th>
+            <th>Average</th>
+            <th>Median</th>
+            <th>Max</th>
+          </tr>
+        </thead>
+        <tbody id="part1CompareBody"></tbody>
+      </table>
+
+      <div class="subtabs" role="tablist">
+        <button type="button" class="subtab p1subtab active" data-p1="v5" role="tab" aria-selected="true">Part 1 v5 — current best</button>
+        <button type="button" class="subtab p1subtab" data-p1="v4" role="tab" aria-selected="false">Part 1 v4 — previous baseline</button>
+      </div>
+
+      <div class="status" id="part1_loadStatus" style="margin-bottom:12px;color:var(--muted);"></div>
+
     <section class="metrics">
       <div class="metric">
         <div class="label">Solved</div>
@@ -496,23 +522,30 @@
 
   <script src="data.js"></script>
   <script>
+    let part1Store = { v4: null, v5: null };
+    let activePart1 = "v5";
     let part2Store = { "006": null, "014": null };
     let activePart2 = "006";
 
     function loadDashboard() {
       try {
-        const part1Rows = requireRows("RESULT_ROWS");
+        const rowsV4 = requireRows("PART1_V4_ROWS");
+        const rowsV5 = requireRows("PART1_V5_ROWS");
         const rows006 = requireRows("CANDIDATE_006_ROWS");
         const rows014 = requireRows("CANDIDATE_014_ROWS");
 
+          part1Store.v4 = rowsV4;
+          part1Store.v5 = rowsV5;
           part2Store["006"] = rows006;
           part2Store["014"] = rows014;
-          render(part1Rows, "");
+          render(part1Store[activePart1], "");
+          fillPart1CompareTable();
+          setPart1Status();
           fillCompareTable();
           render(part2Store[activePart2], "p2_");
           setPart2Status();
           document.getElementById("loadStatus").textContent =
-            `${part1Rows.length} conjectures loaded (Part 1)`;
+            `${rowsV5.length} conjectures loaded (Part 1 v5)`;
       } catch (error) {
         document.getElementById("loadStatus").textContent =
           error.message + ". Make sure data.js is next to index.html.";
@@ -545,7 +578,26 @@
             render(part2Store[activePart2], "p2_");
             setPart2Status();
           });
+        } else if (target === "panel-part1") {
+          requestAnimationFrame(() => {
+            render(part1Store[activePart1], "");
+            setPart1Status();
+          });
         }
+      });
+    });
+
+    document.querySelectorAll(".p1subtab").forEach(button => {
+      button.addEventListener("click", () => {
+        const key = button.getAttribute("data-p1");
+        if (!key || !part1Store[key]) return;
+        activePart1 = key;
+        document.querySelectorAll(".p1subtab").forEach(b => {
+          b.classList.toggle("active", b === button);
+          b.setAttribute("aria-selected", b === button ? "true" : "false");
+        });
+        render(part1Store[activePart1], "");
+        setPart1Status();
       });
     });
 
@@ -563,12 +615,43 @@
       });
     });
 
+    function setPart1Status() {
+      const rows = part1Store[activePart1];
+      const label = activePart1 === "v5" ? "current best" : "previous baseline";
+      document.getElementById("part1_loadStatus").textContent = rows
+        ? `Showing Part 1 ${activePart1} (${label}) — ${rows.length} conjectures`
+        : "";
+    }
+
     function setPart2Status() {
       const rows = part2Store[activePart2];
       const label = activePart2 === "006" ? "GPT-5.5" : "DeepSeek";
       document.getElementById("p2_loadStatus").textContent = rows
         ? `Showing candidate_${activePart2} (${label}) — ${rows.length} conjectures`
         : "";
+    }
+
+    function fillPart1CompareTable() {
+      const tbody = document.getElementById("part1CompareBody");
+      const specs = [
+        { key: "v5", name: "Part 1 v5" },
+        { key: "v4", name: "Part 1 v4" },
+      ];
+      tbody.innerHTML = specs
+        .map(spec => {
+          const stats = summarizeRows(part1Store[spec.key]);
+          return `
+            <tr>
+              <td>${spec.name}</td>
+              <td>${stats.solved}/${stats.n}</td>
+              <td>${formatSeconds(stats.total)}</td>
+              <td>${formatSeconds(stats.avg)}</td>
+              <td>${formatSeconds(stats.median)}</td>
+              <td>${formatSeconds(stats.max)}</td>
+            </tr>
+          `;
+        })
+        .join("");
     }
 
     function fillCompareTable() {
