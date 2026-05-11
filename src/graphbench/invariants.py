@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import OrderedDict
 from functools import lru_cache
 import math
 
@@ -16,6 +17,9 @@ CHEAP_INVARIANTS = {
     "average_degree",
     "triangle_number",
 }
+
+_INVARIANT_CACHE_MAXSIZE = 20000
+_INVARIANT_CACHE: OrderedDict[tuple[bytes, tuple[str, ...]], dict[str, float]] = OrderedDict()
 
 
 def graph_key(G: nx.Graph) -> bytes:
@@ -35,6 +39,41 @@ def compute_invariants(G: nx.Graph, needed: set[str] | None = None) -> dict[str,
     n = G.number_of_nodes()
     m = G.number_of_edges()
     degrees = [degree for _, degree in G.degree()]
+    connected: bool | None = None
+    distance_maps: dict[int, dict[int, int]] | None = None
+    eccentricities: list[int] | None = None
+    average_distances: list[float] | None = None
+
+    def is_connected() -> bool:
+        nonlocal connected
+        if connected is None:
+            connected = n > 0 and nx.is_connected(G)
+        return connected
+
+    def get_distance_maps() -> dict[int, dict[int, int]]:
+        nonlocal distance_maps
+        if distance_maps is None:
+            distance_maps = dict(nx.all_pairs_shortest_path_length(G))
+        return distance_maps
+
+    def get_eccentricities() -> list[int] | None:
+        nonlocal eccentricities
+        if n <= 1 or not is_connected():
+            return None
+        if eccentricities is None:
+            eccentricities = [max(lengths.values()) for lengths in get_distance_maps().values()]
+        return eccentricities
+
+    def get_average_distances() -> list[float]:
+        nonlocal average_distances
+        if average_distances is None:
+            if n <= 1:
+                average_distances = [0.0]
+            elif not is_connected():
+                average_distances = [math.inf]
+            else:
+                average_distances = [sum(lengths.values()) / (n - 1) for lengths in get_distance_maps().values()]
+        return average_distances
 
     result["order"] = n
     result["size"] = m
@@ -45,9 +84,11 @@ def compute_invariants(G: nx.Graph, needed: set[str] | None = None) -> dict[str,
     result["triangle_number"] = sum(nx.triangles(G).values()) // 3
 
     if "diameter" in needed:
-        result["diameter"] = nx.diameter(G) if n > 1 and nx.is_connected(G) else math.inf
+        values = get_eccentricities()
+        result["diameter"] = max(values) if values else math.inf
     if "radius" in needed:
-        result["radius"] = nx.radius(G) if n > 1 and nx.is_connected(G) else math.inf
+        values = get_eccentricities()
+        result["radius"] = min(values) if values else math.inf
     if "clique_number" in needed:
         result["clique_number"] = _clique_number(G)
     if "independence_number" in needed or "vertex_cover_number" in needed:
@@ -67,11 +108,11 @@ def compute_invariants(G: nx.Graph, needed: set[str] | None = None) -> dict[str,
     if "largest_eigenvalue" in needed:
         result["largest_eigenvalue"] = _largest_adjacency_eigenvalue(G)
     if "largest_distance_eigenvalue" in needed:
-        result["largest_distance_eigenvalue"] = _largest_distance_eigenvalue(G)
+        result["largest_distance_eigenvalue"] = _largest_distance_eigenvalue(G, get_distance_maps())
     if "proximity" in needed:
-        result["proximity"] = _proximity(G)
+        result["proximity"] = _proximity(get_average_distances())
     if "remoteness" in needed:
-        result["remoteness"] = _remoteness(G)
+        result["remoteness"] = _remoteness(get_average_distances())
     if "randic_index" in needed:
         result["randic_index"] = _randic_index(G)
     if "harmonic_index" in needed:
@@ -87,14 +128,18 @@ def compute_invariants(G: nx.Graph, needed: set[str] | None = None) -> dict[str,
     return result
 
 
-@lru_cache(maxsize=20000)
-def compute_invariants_from_graph6(g6: bytes, needed_key: tuple[str, ...]) -> dict[str, float]:
-    graph = nx.from_graph6_bytes(g6.strip())
-    return compute_invariants(graph, set(needed_key))
-
-
 def compute_cached(G: nx.Graph, needed: set[str]) -> dict[str, float]:
-    return dict(compute_invariants_from_graph6(graph_key(G).strip(), tuple(sorted(needed))))
+    key = (graph_key(G).strip(), tuple(sorted(needed)))
+    cached = _INVARIANT_CACHE.get(key)
+    if cached is not None:
+        _INVARIANT_CACHE.move_to_end(key)
+        return dict(cached)
+
+    result = compute_invariants(G, set(needed))
+    _INVARIANT_CACHE[key] = result
+    if len(_INVARIANT_CACHE) > _INVARIANT_CACHE_MAXSIZE:
+        _INVARIANT_CACHE.popitem(last=False)
+    return dict(result)
 
 
 def _clique_number(G: nx.Graph) -> int:
@@ -260,32 +305,19 @@ def _largest_adjacency_eigenvalue(G: nx.Graph) -> float:
     return float(np.linalg.eigvalsh(matrix)[-1])
 
 
-def _largest_distance_eigenvalue(G: nx.Graph) -> float:
+def _largest_distance_eigenvalue(G: nx.Graph, distances: dict[int, dict[int, int]]) -> float:
     if G.number_of_nodes() == 0:
         return 0.0
-    distances = dict(nx.all_pairs_shortest_path_length(G))
     nodes = list(G.nodes())
     matrix = np.array([[distances[u][v] for v in nodes] for u in nodes], dtype=float)
     return float(np.linalg.eigvalsh(matrix)[-1])
 
 
-def _average_distances(G: nx.Graph) -> list[float]:
-    if G.number_of_nodes() <= 1:
-        return [0.0]
-    distances = dict(nx.all_pairs_shortest_path_length(G))
-    values = []
-    for node in G.nodes():
-        values.append(sum(distances[node].values()) / (G.number_of_nodes() - 1))
-    return values
-
-
-def _proximity(G: nx.Graph) -> float:
-    distances = _average_distances(G)
+def _proximity(distances: list[float]) -> float:
     return 1.0 / max(distances) if distances and max(distances) > 0 else 0.0
 
 
-def _remoteness(G: nx.Graph) -> float:
-    distances = _average_distances(G)
+def _remoteness(distances: list[float]) -> float:
     return 1.0 / min(distances) if distances and min(distances) > 0 else 0.0
 
 

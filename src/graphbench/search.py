@@ -8,7 +8,6 @@ import time
 
 import networkx as nx
 
-from .classes import satisfies_classes
 from .conjecture import Conjecture
 from .generators import generate_graph, generate_initial_population
 from .invariants import compute_cached
@@ -73,6 +72,7 @@ def search_counterexample(conjecture: Conjecture, config: SearchConfig) -> Searc
         if conjecture.is_counterexample(invariants):
             return _result(conjecture, True, start, score, graph, invariants, evaluated)
 
+    scored.sort(key=lambda item: item[0], reverse=True)
     while time.monotonic() - start < config.time_limit:
         if not scored:
             break
@@ -83,7 +83,7 @@ def search_counterexample(conjecture: Conjecture, config: SearchConfig) -> Searc
         else:
             candidate = mutate(parent, conjecture.subgroup, rng, max_order)
 
-        if candidate is None or not satisfies_classes(candidate, conjecture.subgroup):
+        if candidate is None:
             continue
 
         try:
@@ -94,7 +94,7 @@ def search_counterexample(conjecture: Conjecture, config: SearchConfig) -> Searc
         evaluated += 1
         if score > best_score:
             best_score, best_graph, best_invariants = score, candidate, invariants
-        if conjecture.is_counterexample(invariants) and satisfies_classes(candidate, conjecture.subgroup):
+        if conjecture.is_counterexample(invariants):
             verified = compute_cached(candidate, needed)
             if conjecture.is_counterexample(verified):
                 return _result(conjecture, True, start, score, candidate, verified, evaluated)
@@ -107,6 +107,7 @@ def search_counterexample(conjecture: Conjecture, config: SearchConfig) -> Searc
             tail = scored[keep_elite:]
             rng.shuffle(tail)
             scored = elite + tail[: population_size - keep_elite]
+            scored.sort(key=lambda item: item[0], reverse=True)
 
     return _result(conjecture, False, start, best_score, best_graph, best_invariants, evaluated)
 
@@ -168,7 +169,6 @@ def _select_parent(
     scored: list[tuple[float, float, nx.Graph, dict[str, float]]],
     rng: random.Random,
 ) -> nx.Graph:
-    scored.sort(key=lambda item: item[0], reverse=True)
     if rng.random() < 0.75:
         top_count = max(1, len(scored) // 5)
         return rng.choice(scored[:top_count])[2]

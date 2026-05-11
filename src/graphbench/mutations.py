@@ -4,7 +4,6 @@ import random
 
 import networkx as nx
 
-from .classes import satisfies_classes
 from .repair import repair
 
 
@@ -24,13 +23,23 @@ def mutate(G: nx.Graph, classes: tuple[str, ...], rng: random.Random, max_order:
             _add_path,
         ]
 
+    needs_repair = not _mutations_preserve_classes(classes)
     for _ in range(20):
         graph = G.copy()
         rng.choice(operations)(graph, rng, max_order)
+        if not needs_repair:
+            return nx.convert_node_labels_to_integers(graph)
         repaired = repair(graph, classes, rng)
-        if repaired is not None and satisfies_classes(repaired, classes):
+        if repaired is not None:
             return repaired
     return None
+
+
+def _mutations_preserve_classes(classes: tuple[str, ...]) -> bool:
+    class_set = set(classes)
+    if "claw_free" in class_set:
+        return False
+    return class_set <= {"connected", "tree"}
 
 
 def _add_edge(G: nx.Graph, rng: random.Random, _: int) -> None:
