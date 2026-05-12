@@ -87,16 +87,16 @@
     Enseignement & Optimisation combinatoire \\
     Enseignant & François DELBOT \\
     Année universitaire & 2025--2026 \\
-    Date de rendu & 9 mai 2026 \\
+    Date de rendu & 12 mai 2026 \\
     Dépôt GitHub & \url{https://github.com/Aminmiri82/projet-optimisation-combinatoire} \\
   \end{tabular}
 
   \vspace{1.35cm}
   \begin{tabular}{@{}r@{:\quad}l@{}}
     Conjectures réfutées & 100/100 \\
-    Score final (\(\sum_i c_i\)) & 26{,}34 \\
-    Temps total Partie 1 & 26{,}34 s \\
-    Temps moyen Partie 1 & 0{,}263 s \\
+    Score final (\(\sum_i c_i\)) & 25{,}28 \\
+    Temps total Partie 1 & 25{,}28 s \\
+    Temps moyen Partie 1 & 0{,}253 s \\
     FunSearch (GPT-5{,}5, \texttt{candidate\_006}) & 100/100, 129{,}95 s \\
     FunSearch (DeepSeek, \texttt{candidate\_014}) & 100/100, 126{,}41 s \\
   \end{tabular}
@@ -119,7 +119,7 @@ Un contre-exemple est un graphe appartenant aux classes imposées par le benchma
 
 Le système doit donc charger les conjectures, générer des graphes admissibles, calculer les invariants requis, maximiser la violation, puis produire un graphe au format \texttt{graph6}. Notre solution se décompose en deux parties. La Partie 1 est une recherche heuristique conçue à la main. La Partie 2 implémente une boucle de type FunSearch où un modèle de langage propose des fonctions de score, qui sont ensuite évaluées automatiquement.
 
-Le résultat principal est le suivant : la Partie 1 atteint 100/100 contre-exemples valides avec un coût total de 26.338137 secondes, soit 0.263381 seconde en moyenne, sur le dernier run local v5. FunSearch atteint également 100/100 avec certains candidats, mais ne dépasse pas le temps de l'heuristique manuelle finale.
+Le résultat principal est le suivant : la Partie 1 atteint 100/100 contre-exemples valides avec un coût total de 25.280746 secondes, soit 0.252807 seconde en moyenne, sur le dernier run local v5. FunSearch atteint également 100/100 avec certains candidats, mais ne dépasse pas le temps de l'heuristique manuelle finale.
 
 \clearpage
 \begin{center}
@@ -243,7 +243,7 @@ def _clique_path_clique(left_size, right_size, path_length):
 
 La v4 a stabilisé les derniers échecs en ajoutant les chemins branchés et les queues triangulaires. Les chemins branchés gardent une structure d'arbre, mais créent localement des effets forts sur la domination indépendante, les feuilles et certains indices de Zagreb. Les queues triangulaires conservent une structure proche du sans-griffe tout en contrôlant les distances.
 
-La v5 conserve les mêmes familles de graphes que la v4, mais rend la taille de population adaptative. La taille par défaut passe à 30 candidats, ce qui réduit le coût de recherche sur la majorité des conjectures. Elle monte à 60, ou exceptionnellement 120, pour quelques couples d'invariants sensibles comme \path{second_zagreb_index}/\path{independent_domination_number}, \path{largest_distance_eigenvalue}/\texttt{proximity}, \path{average_degree}/\path{clique_number}, \path{clique_number}/\path{minimum_degree}, \texttt{radius}/\texttt{remoteness} et \texttt{density}/\texttt{proximity}. Cette v5 garde 100/100 contre-exemples valides et réduit le coût total mesuré de 136.801705 secondes en v4 à 26.338137 secondes.
+La v5 conserve les mêmes familles de graphes que la v4, mais rend la taille de population adaptative. La taille par défaut passe à 30 candidats, ce qui réduit le coût de recherche sur la majorité des conjectures. Elle monte à 60, ou exceptionnellement 120, pour quelques couples d'invariants sensibles comme \path{second_zagreb_index}/\path{independent_domination_number}, \path{largest_distance_eigenvalue}/\texttt{proximity}, \path{average_degree}/\path{clique_number}, \path{clique_number}/\path{minimum_degree}, \texttt{radius}/\texttt{remoteness} et \texttt{density}/\texttt{proximity}. Cette v5 garde 100/100 contre-exemples valides et réduit le coût total mesuré de 136.801705 secondes en v4 à 25.280746 secondes.
 
 \begin{table}[H]
 \centering
@@ -341,7 +341,7 @@ if violation < 0:
     score += 0.5 * dir_norm - away_penalty
 \end{lstlisting}
 
-Scientifiquement, ce candidat est cohérent : il conserve la violation comme signal principal, encourage les points proches de la frontière et évite certaines directions localement défavorables. Son résultat complet en v5 est 100/100, avec un coût total de 126.412765 secondes. Il est donc valide et légèrement plus rapide que le candidat GPT-5.5 006, mais reste plus lent que l'heuristique manuelle Partie 1 v5.
+Scientifiquement, ce candidat est cohérent : il conserve la violation comme signal principal, encourage les points proches de la frontière et évite certaines directions localement défavorables. Son résultat complet en v5 est 100/100, avec un coût total de 122.459858 secondes. Il est donc valide et légèrement plus rapide que le candidat GPT-5.5 006, mais reste plus lent que l'heuristique manuelle Partie 1 v5.
 
 \section{Résultats expérimentaux}
 
@@ -351,16 +351,16 @@ Scientifiquement, ce candidat est cohérent : il conserve la violation comme sig
 \toprule
 Méthode & Trouvé & Coût total & Temps moyen \\
 \midrule
-Heuristique manuelle Partie 1 v5 & 100/100 & 26.34 & 0.263 s \\
+Heuristique manuelle Partie 1 v5 & 100/100 & 25.28 & 0.253 s \\
 Heuristique manuelle Partie 1 v4 & 100/100 & 136.80 & 1.368 s \\
-FunSearch DeepSeek, candidat 014 & 100/100 & 126.41 & 1.264 s \\
-FunSearch GPT-5.5, candidat 006 & 100/100 & 129.95 & 1.300 s \\
+FunSearch DeepSeek, candidat 014 & 100/100 & 122.46 & 1.225 s \\
+FunSearch GPT-5.5, candidat 006 & 100/100 & 126.54 & 1.265 s \\
 \bottomrule
 \end{tabular}
 \caption{Résultats finaux sur les 100 conjectures.}
 \end{table}
 
-La Partie 1 v5 est la meilleure en temps moyen. Elle obtient une médiane de 0.201430 seconde, un maximum de 1.624331 seconde et un score moyen de 2.877544. Le candidat GPT-5.5 006 atteint 100/100 avec un coût total de 129.953159 secondes. Le candidat DeepSeek 014 atteint 100/100 avec un coût total de 126.412765 secondes et constitue le meilleur candidat de la séquence DeepSeek.
+La Partie 1 v5 est la meilleure en temps moyen. Elle obtient une médiane de 0.170065 seconde, un maximum de 1.374284 seconde et un score moyen de 2.877544. Le candidat GPT-5.5 006 atteint 100/100 avec un coût total de 126.543390 secondes. Le candidat DeepSeek 014 atteint 100/100 avec un coût total de 122.459858 secondes et constitue le meilleur candidat de la séquence DeepSeek.
 
 Le fait que FunSearch atteigne 100/100 est important : l'architecture produit des fonctions exécutables et valides. En revanche, elle n'améliore pas le temps final. L'explication la plus probable est que le moteur de Partie 1 était déjà très fortement aidé par ses familles initiales. Lorsque le bon graphe est déjà présent dans la population initiale ou proche d'elle, la qualité fine du score devient secondaire.
 

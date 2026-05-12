@@ -87,18 +87,18 @@
     Course & Combinatorial Optimization \\
     Instructor & François DELBOT \\
     Academic year & 2025--2026 \\
-    Submission date & May 9, 2026 \\
+    Submission date & May 12, 2026 \\
     Repository & \url{https://github.com/Aminmiri82/projet-optimisation-combinatoire} \\
   \end{tabular}
 
   \vspace{1.35cm}
   \begin{tabular}{@{}r@{:\quad}l@{}}
     Refuted conjectures & 100/100 \\
-    Final score (\(\sum_i c_i\)) & 26.34 \\
-    Part 1 total time & 26.34 s \\
-    Part 1 average time & 0.263 s \\
-    FunSearch (GPT-5.5, \texttt{candidate\_006}) & 100/100, 129.95 s \\
-    FunSearch (DeepSeek, \texttt{candidate\_014}) & 100/100, 126.41 s \\
+    Final score (\(\sum_i c_i\)) & 25.28 \\
+    Part 1 total time & 25.28 s \\
+    Part 1 average time & 0.253 s \\
+    FunSearch (GPT-5.5, \texttt{candidate\_006}) & 100/100, 126.54 s \\
+    FunSearch (DeepSeek, \texttt{candidate\_014}) & 100/100, 122.46 s \\
   \end{tabular}
 
   \vfill
@@ -119,7 +119,7 @@ A counterexample is a graph in the required benchmark class for which the inequa
 
 The program must load conjectures, generate admissible graphs, compute the required invariants, maximize the violation, and output a graph in \texttt{graph6} format. Our solution has two parts. Part 1 is a hand-designed heuristic search. Part 2 implements a FunSearch-style loop in which a language model proposes scoring functions that are evaluated automatically.
 
-The main result is that Part 1 refutes all 100 benchmark conjectures with a total cost of 26.338137 seconds, or 0.263381 seconds on average, on the final local v5 run. FunSearch also reaches 100/100 with some candidates, but it does not improve over the final hand-designed heuristic.
+The main result is that Part 1 refutes all 100 benchmark conjectures with a total cost of 25.280746 seconds, or 0.252807 seconds on average, on the final local v5 run. FunSearch also reaches 100/100 with some candidates, but it does not improve over the final hand-designed heuristic.
 
 \clearpage
 \begin{center}
@@ -243,7 +243,7 @@ def _clique_path_clique(left_size, right_size, path_length):
 
 v4 stabilized the last failures by adding branched paths and triangle tails. Branched paths remain trees but create strong local effects on independent domination, leaves, and Zagreb indices. Triangle tails preserve a near claw-free shape while controlling distance-related invariants.
 
-v5 keeps the same graph families as v4, but makes the population size adaptive. The default size becomes 30 candidates, which reduces search overhead for most conjectures. It rises to 60, or exceptionally 120, for a few sensitive invariant pairs such as \path{second_zagreb_index}/\path{independent_domination_number}, \path{largest_distance_eigenvalue}/\texttt{proximity}, \path{average_degree}/\path{clique_number}, \path{clique_number}/\path{minimum_degree}, \texttt{radius}/\texttt{remoteness}, and \texttt{density}/\texttt{proximity}. This v5 keeps 100/100 valid counterexamples and reduces the measured total cost from 136.801705 seconds in v4 to 26.338137 seconds.
+v5 keeps the same graph families as v4, but makes the population size adaptive. The default size becomes 30 candidates, which reduces search overhead for most conjectures. It rises to 60, or exceptionally 120, for a few sensitive invariant pairs such as \path{second_zagreb_index}/\path{independent_domination_number}, \path{largest_distance_eigenvalue}/\texttt{proximity}, \path{average_degree}/\path{clique_number}, \path{clique_number}/\path{minimum_degree}, \texttt{radius}/\texttt{remoteness}, and \texttt{density}/\texttt{proximity}. This v5 keeps 100/100 valid counterexamples and reduces the measured total cost from 136.801705 seconds in v4 to 25.280746 seconds.
 
 \begin{table}[H]
 \centering
@@ -341,7 +341,7 @@ if violation < 0:
     score += 0.5 * dir_norm - away_penalty
 \end{lstlisting}
 
-Scientifically, this candidate is coherent: it keeps violation as the main signal, encourages boundary candidates, and avoids locally bad derivative directions. Its full v5 result is 100/100 with total cost 126.412765 seconds. It is valid and slightly faster than GPT-5.5 candidate 006, but still slower than the manual Part 1 v5 heuristic.
+Scientifically, this candidate is coherent: it keeps violation as the main signal, encourages boundary candidates, and avoids locally bad derivative directions. Its full v5 result is 100/100 with total cost 122.459858 seconds. It is valid and slightly faster than GPT-5.5 candidate 006, but still slower than the manual Part 1 v5 heuristic.
 
 \section{Experimental Results}
 
@@ -351,16 +351,16 @@ Scientifically, this candidate is coherent: it keeps violation as the main signa
 \toprule
 Method & Found & Total cost & Average time \\
 \midrule
-Part 1 hand-designed heuristic v5 & 100/100 & 26.34 & 0.263 s \\
+Part 1 hand-designed heuristic v5 & 100/100 & 25.28 & 0.253 s \\
 Part 1 hand-designed heuristic v4 & 100/100 & 136.80 & 1.368 s \\
-FunSearch DeepSeek candidate 014 & 100/100 & 126.41 & 1.264 s \\
-FunSearch GPT-5.5 candidate 006 & 100/100 & 129.95 & 1.300 s \\
+FunSearch DeepSeek candidate 014 & 100/100 & 122.46 & 1.225 s \\
+FunSearch GPT-5.5 candidate 006 & 100/100 & 126.54 & 1.265 s \\
 \bottomrule
 \end{tabular}
 \caption{Final results on the 100 conjectures.}
 \end{table}
 
-Part 1 v5 is the fastest method on the final benchmark. It has median time 0.201430 seconds, maximum time 1.624331 seconds, and mean best score 2.877544. GPT-5.5 candidate 006 reaches 100/100 with total cost 129.953159 seconds. DeepSeek candidate 014 reaches 100/100 with total cost 126.412765 seconds and is the best candidate in the DeepSeek sequence.
+Part 1 v5 is the fastest method on the final benchmark. It has median time 0.170065 seconds, maximum time 1.374284 seconds, and mean best score 2.877544. GPT-5.5 candidate 006 reaches 100/100 with total cost 126.543390 seconds. DeepSeek candidate 014 reaches 100/100 with total cost 122.459858 seconds and is the best candidate in the DeepSeek sequence.
 
 The fact that FunSearch reaches 100/100 matters: the architecture generates executable and valid scoring functions. However, it does not improve final runtime. The most likely explanation is that the Part 1 engine was already strongly helped by its initial graph families. When the right graph is already present in the initial population or close to it, the fine details of the score become secondary.
 

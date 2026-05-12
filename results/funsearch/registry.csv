@@ -27,3 +27,5 @@ src/graphbench/funsearch/candidates/candidate_025.py,results/funsearch/candidate
 src/graphbench/funsearch/candidates/candidate_014.py,results/funsearch/candidate_014_100.csv,100,100,166.636643,1.666366
 src/graphbench/funsearch/candidates/candidate_014.py,results/funsearch/candidate_014_100.csv,100,100,126.412765,1.264128
 src/graphbench/funsearch/candidates/candidate_006-gpt5.5.py,results/funsearch/candidate_006-gpt5.5_100.csv,100,100,129.953159,1.299532
+src/graphbench/funsearch/candidates/candidate_006-gpt5.5.py,results/funsearch/candidate_006-gpt5.5_100.csv,100,100,126.543390,1.265434
+src/graphbench/funsearch/candidates/candidate_014.py,results/funsearch/candidate_014.csv,100,100,122.459858,1.224599
